@@ -37,7 +37,7 @@ QR_CODE = environ.get('QR_CODE', 'https://envs.sh/bNP.jpg') # Scanner Code image
 REFERAL_TIME = int(environ.get('REFERAL_USER_TIME', "2592000")) # set in seconds | already seted 1 month premium
 REFFER_POINT = int(environ.get('USER_POINT', "50")) # Set Referel point Count 
 #premium Users Satuts
-premium = environ.get('PREMIUM_LOGS', '-1002259958038')
+premium = environ.get('PREMIUM_LOGS', '-1002585601614')
 PREMIUM_LOGS = int(premium) if premium and id_pattern.search(premium) else None
 # lock file, set file limit 
 FILE_LIMITE = int(environ.get('FILE_LIMITE', 15))
@@ -72,11 +72,11 @@ VERIFY_IMG = environ.get("VERIFY_IMG", "https://graph.org/file/1669ab9af68eaa62c
 VERIFY_URL = environ.get('VERIFY_URL', 'modijiurl.com')
 VERIFY_API = (environ.get('VERIFY_API', '04d39f6f93164655a957b4ffd397defff9183148'))
 
-TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "600"))
+TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "28800"))
 VERIFY_URL2 = environ.get('VERIFY_URL2', 'modijiurl.com')
 VERIFY_API2 = (environ.get('VERIFY_API2', '04d39f6f93164655a957b4ffd397defff9183148'))
  
-THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "600"))
+THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "28800"))
 VERIFY_URL3 = environ.get('VERIFY_URL3', 'sharedisklinks.com')
 VERIFY_API3 = (environ.get('VERIFY_API3', '04d39f6f93164655a957b4ffd397defff9183148'))
  
@@ -115,7 +115,7 @@ MELCOW_NEW_USERS = is_enabled((environ.get('MELCOW_NEW_USERS', "True")), True)
 REACTION = ["🔥", "❤️", "😍", "⚡", "👍", "❤", "🔥", "🥰", "👏", "😁", "🎉", "🤩", "🙏", "👌", "🕊", "❤‍🔥", "⚡", "😇", "🤗", "😘", "🙊", "😎"]
 
 # Streaming
-BIN_CHANNEL = int(environ.get("BIN_CHANNEL", "-1002259958038")) 
+BIN_CHANNEL = int(environ.get("BIN_CHANNEL", "-1002585601614")) 
 PORT = int(environ.get('PORT', 8080))
 NO_PORT = bool(environ.get('NO_PORT', False))
 APP_NAME = None
