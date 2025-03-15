@@ -32,7 +32,7 @@ WELCOME_VID = environ.get("WELCOME_VID", "https://telegra.ph/file/451f038b4e7c2d
 #premium imag
 REFFER_PIC = environ.get('REFFER_PIC', 'https://graph.org/file/f75feb19aece0d4badefd.jpg')
 PREMIUM_PIC = environ.get('SUBSCRIPTION', 'https://i.imghippo.com/files/wPdPK1726559453.jpg')
-QR_CODE = environ.get('QR_CODE', 'https://graph.org/file/8bc2cc53e47180bc78c10.jpg') # Scanner Code image 
+QR_CODE = environ.get('QR_CODE', 'https://envs.sh/bNP.jpg') # Scanner Code image 
 #refer time, or feffer count
 REFERAL_TIME = int(environ.get('REFERAL_USER_TIME', "2592000")) # set in seconds | already seted 1 month premium
 REFFER_POINT = int(environ.get('USER_POINT', "50")) # Set Referel point Count 
@@ -61,8 +61,8 @@ COLLECTION_NAME = environ.get('COLLECTION_NAME', 'MzBotz0')
 
 #stream link shortner
 STREAM_SITE = (environ.get('STREAM_SITE', 'mdiskshortner.link'))
-STREAM_API = (environ.get('STREAM_API', '587f94f0e0b1813a52aed61290af6ea79d6ee464'))
-STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me'))
+STREAM_API = (environ.get('STREAM_API', ''))
+STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me/how_to_open_mdiskshortner/4'))
 STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "False")), False)
 
 
