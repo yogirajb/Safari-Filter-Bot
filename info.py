@@ -49,7 +49,7 @@ ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ
 OWNER_USER_NAME = environ.get("OWNER_USER_NAME", "SamMarathi") # widout 👉 @
 CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '-1001882603026').split()]
 # post channel auto post new movie
-POST_CHANNELS = list(map(int, (channel.strip() for channel in environ.get('POST_CHANNELS', '-1002665421569').split(','))))
+POST_CHANNELS = list(map(int, (channel.strip() for channel in environ.get('POST_CHANNELS', '').split(','))))
 AUTH_CHANNEL = int(environ.get('AUTH_CHANNEL', '-1002286592825'))
 AUTH_REQ_CHANNEL = int(environ.get('AUTH_REQ_CHANNEL', '-1001935710027'))
 NO_RESULTS_MSG = is_enabled((environ.get("NO_RESULTS_MSG", 'True')), False)
@@ -60,43 +60,43 @@ DATABASE_NAME = environ.get('DATABASE_NAME', "mzfilterbot")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'MzCollection')
 
 #stream link shortner
-STREAM_SITE = (environ.get('STREAM_SITE', 'sharedisklinks.com'))
-STREAM_API = (environ.get('STREAM_API', '587f94f0e0b1813a52aed61290af6ea79d6ee464'))
-STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me/Hoe/69'))
+STREAM_SITE = (environ.get('STREAM_SITE', 'mdiskshortner.link'))
+STREAM_API = (environ.get('STREAM_API', ''))
+STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me/'))
 STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "False")), False)
 
 
 #verify site api and url
 IS_VERIFY = is_enabled((environ.get('IS_VERIFY', 'False')), False)
 VERIFY_IMG = environ.get("VERIFY_IMG", "https://graph.org/file/1669ab9af68eaa62c3ca4.jpg")
-VERIFY_URL = environ.get('VERIFY_URL', 'sharedisklinks.com')
-VERIFY_API = (environ.get('VERIFY_API', '587f94f0e0b1813a52aed61290af6ea79d6ee464'))
+VERIFY_URL = environ.get('VERIFY_URL', '.com')
+VERIFY_API = (environ.get('VERIFY_API', ''))
 
-TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "600"))
-VERIFY_URL2 = environ.get('VERIFY_URL2', 'sharedisklinks.com')
-VERIFY_API2 = (environ.get('VERIFY_API2', '587f94f0e0b1813a52aed61290af6ea79d6ee464'))
+TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "14400"))
+VERIFY_URL2 = environ.get('VERIFY_URL2', '.com')
+VERIFY_API2 = (environ.get('VERIFY_API2', ''))
  
-THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "600"))
-VERIFY_URL3 = environ.get('VERIFY_URL3', 'sharedisklinks.com')
-VERIFY_API3 = (environ.get('VERIFY_API3', '587f94f0e0b1813a52aed61290af6ea79d6ee464'))
+THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "14400"))
+VERIFY_URL3 = environ.get('VERIFY_URL3', '.com')
+VERIFY_API3 = (environ.get('VERIFY_API3', ''))
  
-TUTORIAL = environ.get('TUTORIAL', 'https://t.me/shdjekkw')
-TUTORIAL2 = environ.get('TUTORIAL2', 'https://t.me/hejejje')
-TUTORIAL3 = environ.get('TUTORIAL3', 'https://t.me/safabsovhwi3')
+TUTORIAL = environ.get('TUTORIAL', '')
+TUTORIAL2 = environ.get('TUTORIAL2', '')
+TUTORIAL3 = environ.get('TUTORIAL3', '')
 
 # auto files delete
 AUTO_FILE_DELETE = is_enabled((environ.get('AUTO_FILE_DELETE', "True")), False)
 
-DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '-1001998895377').split()]
+DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '').split()]
 MAX_B_TN = environ.get("MAX_B_TN", "7")
 MAX_BTN = is_enabled((environ.get('MAX_BTN', "True")), True)
 PORT = environ.get("PORT", "8080")
-GRP_LNK = environ.get('GRP_LNK', 'https://t.me/up')
-CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/Safaribotts')
+GRP_LNK = environ.get('GRP_LNK', 'https://t.me/MzBotzSupport')
+CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/MzBotz')
 MSG_ALRT = environ.get('MSG_ALRT', 'Wʜᴀᴛ Aʀᴇ Yᴏᴜ Lᴏᴏᴋɪɴɢ Aᴛ ?')
 LOG_CHANNEL = int(environ.get('LOG_CHANNEL', -1001962983271))
-GROUP_VERIFY_LOGS = int(environ.get('GROUP_VERIFY_LOGS', -1002259958038)) # Group verify stats 
-REQ_CHANNEL = int(environ.get('REQ_CHANNEL', -1001962983271)) # movies request channel, else log channel
+GROUP_VERIFY_LOGS = int(environ.get('GROUP_VERIFY_LOGS', -1001935710027)) # Group verify stats 
+REQ_CHANNEL = int(environ.get('REQ_CHANNEL', -1001935710027)) # movies request channel, else log channel
 SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'mzbotzsupport')
 IMDB = is_enabled((environ.get('IMDB', "True")), True)
 AUTO_FFILTER = is_enabled((environ.get('AUTO_FFILTER', "True")), True)
@@ -115,7 +115,7 @@ MELCOW_NEW_USERS = is_enabled((environ.get('MELCOW_NEW_USERS', "True")), True)
 REACTION = ["🔥", "❤️", "😍", "⚡", "👍", "❤", "🔥", "🥰", "👏", "😁", "🎉", "🤩", "🙏", "👌", "🕊", "❤‍🔥", "⚡", "😇", "🤗", "😘", "🙊", "😎"]
 
 # Streaming
-BIN_CHANNEL = int(environ.get("BIN_CHANNEL", "-1002259958038")) 
+BIN_CHANNEL = int(environ.get("BIN_CHANNEL", "-1001935710027")) 
 PORT = int(environ.get('PORT', 8080))
 NO_PORT = bool(environ.get('NO_PORT', False))
 APP_NAME = None
