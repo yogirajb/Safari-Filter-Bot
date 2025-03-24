@@ -57,13 +57,13 @@ NO_RESULTS_MSG = is_enabled((environ.get("NO_RESULTS_MSG", 'True')), False)
 # MongoDB information
 DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://mrsam:mrsam1212@cluster0.br8a94z.mongodb.net/?retryWrites=true&w=majority")
 DATABASE_NAME = environ.get('DATABASE_NAME', "mzfilterbot")
-COLLECTION_NAME = environ.get('COLLECTION_NAME', 'MzCollection')
+COLLECTION_NAME = environ.get('COLLECTION_NAME', 'mzcollection')
 
 #stream link shortner
-STREAM_SITE = (environ.get('STREAM_SITE', 'mdiskshortner.link'))
-STREAM_API = (environ.get('STREAM_API', ''))
-STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me/'))
-STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "False")), False)
+STREAM_SITE = (environ.get('STREAM_SITE', 'MdiskShortner.link'))
+STREAM_API = (environ.get('STREAM_API', 'cd6c1f59b3bb44988c8b4450ccd80e50fc9ef5b0'))
+STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me/how_to_open_mdiskshortner/4'))
+STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "True")), False)
 
 
 #verify site api and url
@@ -91,13 +91,13 @@ DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in enviro
 MAX_B_TN = environ.get("MAX_B_TN", "7")
 MAX_BTN = is_enabled((environ.get('MAX_BTN', "True")), True)
 PORT = environ.get("PORT", "8080")
-GRP_LNK = environ.get('GRP_LNK', 'https://t.me/MzBotzSupport')
+GRP_LNK = environ.get('GRP_LNK', 'https://t.me/moviesonerequest')
 CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/MzBotz')
 MSG_ALRT = environ.get('MSG_ALRT', 'Wʜᴀᴛ Aʀᴇ Yᴏᴜ Lᴏᴏᴋɪɴɢ Aᴛ ?')
 LOG_CHANNEL = int(environ.get('LOG_CHANNEL', -1001962983271))
 GROUP_VERIFY_LOGS = int(environ.get('GROUP_VERIFY_LOGS', -1001935710027)) # Group verify stats 
 REQ_CHANNEL = int(environ.get('REQ_CHANNEL', -1001935710027)) # movies request channel, else log channel
-SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'mzbotzsupport')
+SUPPORT_CHAT = environ.get('SUPPORT_CHAT', '-1002387745957')
 IMDB = is_enabled((environ.get('IMDB', "True")), True)
 AUTO_FFILTER = is_enabled((environ.get('AUTO_FFILTER', "True")), True)
 AUTO_DELETE = is_enabled((environ.get('AUTO_DELETE', "True")), True)
