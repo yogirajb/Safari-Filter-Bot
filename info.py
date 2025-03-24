@@ -69,16 +69,16 @@ STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "True")), False)
 #verify site api and url
 IS_VERIFY = is_enabled((environ.get('IS_VERIFY', 'False')), False)
 VERIFY_IMG = environ.get("VERIFY_IMG", "https://graph.org/file/1669ab9af68eaa62c3ca4.jpg")
-VERIFY_URL = environ.get('VERIFY_URL', '.com')
-VERIFY_API = (environ.get('VERIFY_API', ''))
+VERIFY_URL = environ.get('VERIFY_URL', 'papajiurl.com')
+VERIFY_API = (environ.get('VERIFY_API', '41ff6d51799b604c63f6cfe75eb5b7a58794a850'))
 
 TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "14400"))
-VERIFY_URL2 = environ.get('VERIFY_URL2', '.com')
+VERIFY_URL2 = environ.get('VERIFY_URL2', 'modijiurl.com')
 VERIFY_API2 = (environ.get('VERIFY_API2', ''))
  
 THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "14400"))
-VERIFY_URL3 = environ.get('VERIFY_URL3', '.com')
-VERIFY_API3 = (environ.get('VERIFY_API3', ''))
+VERIFY_URL3 = environ.get('VERIFY_URL3', 'papajiurl.com')
+VERIFY_API3 = (environ.get('VERIFY_API3', '41ff6d51799b604c63f6cfe75eb5b7a58794a850'))
  
 TUTORIAL = environ.get('TUTORIAL', '')
 TUTORIAL2 = environ.get('TUTORIAL2', '')
