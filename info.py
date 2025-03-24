@@ -32,7 +32,7 @@ WELCOME_VID = environ.get("WELCOME_VID", "https://telegra.ph/file/451f038b4e7c2d
 #premium imag
 REFFER_PIC = environ.get('REFFER_PIC', 'https://graph.org/file/f75feb19aece0d4badefd.jpg')
 PREMIUM_PIC = environ.get('SUBSCRIPTION', 'https://i.imghippo.com/files/wPdPK1726559453.jpg')
-QR_CODE = environ.get('QR_CODE', 'https://graph.org/file/8bc2cc53e47180bc78c10.jpg') # Scanner Code image 
+QR_CODE = environ.get('QR_CODE', 'https://envs.sh/Tc7.jpg') # Scanner Code image 
 #refer time, or feffer count
 REFERAL_TIME = int(environ.get('REFERAL_USER_TIME', "2592000")) # set in seconds | already seted 1 month premium
 REFFER_POINT = int(environ.get('USER_POINT', "50")) # Set Referel point Count 
@@ -49,7 +49,7 @@ ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ
 OWNER_USER_NAME = environ.get("OWNER_USER_NAME", "SamMarathi") # widout 👉 @
 CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '-1001882603026').split()]
 # post channel auto post new movie
-POST_CHANNELS = list(map(int, (channel.strip() for channel in environ.get('POST_CHANNELS', '').split(','))))
+POST_CHANNELS = list(map(int, (channel.strip() for channel in environ.get('POST_CHANNELS', '-1002413876920').split(','))))
 AUTH_CHANNEL = int(environ.get('AUTH_CHANNEL', '-1002286592825'))
 AUTH_REQ_CHANNEL = int(environ.get('AUTH_REQ_CHANNEL', '-1001935710027'))
 NO_RESULTS_MSG = is_enabled((environ.get("NO_RESULTS_MSG", 'True')), False)
@@ -124,7 +124,7 @@ if 'DYNO' in environ:
     APP_NAME = environ.get('APP_NAME')
 else:
     ON_HEROKU = False
-BIND_ADRESS = str(getenv('WEB_SERVER_BIND_ADDRESS', '0.0.0.0'))
+BIND_ADRESS = str(getenv('WEB_SERVER_BIND_ADDRESS', 'romantic-faye-visionloverz-047c02c2.koyeb.app/'))
 FQDN = str(getenv('FQDN', BIND_ADRESS)) if not ON_HEROKU or getenv('FQDN') else APP_NAME+'.herokuapp.com'
 URL = "https://{}/".format(FQDN) if ON_HEROKU or NO_PORT else \
     "https://{}:{}/".format(FQDN, PORT)
