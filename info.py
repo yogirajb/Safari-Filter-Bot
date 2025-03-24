@@ -74,7 +74,7 @@ VERIFY_API = (environ.get('VERIFY_API', '41ff6d51799b604c63f6cfe75eb5b7a58794a85
 
 TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "14400"))
 VERIFY_URL2 = environ.get('VERIFY_URL2', 'modijiurl.com')
-VERIFY_API2 = (environ.get('VERIFY_API2', ''))
+VERIFY_API2 = (environ.get('VERIFY_API2', '04d39f6f93164655a957b4ffd397defff9183148'))
  
 THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "14400"))
 VERIFY_URL3 = environ.get('VERIFY_URL3', 'papajiurl.com')
