@@ -81,7 +81,7 @@ VERIFY_URL3 = environ.get('VERIFY_URL3', 'modijiurl.com')
 VERIFY_API3 = (environ.get('VERIFY_API3', '04d39f6f93164655a957b4ffd397defff9183148'))
  
 TUTORIAL = environ.get('TUTORIAL', 'https://t.me/how_to_open_modijilink/2')
-TUTORIAL2 = environ.get('TUTORIAL2', '')
+TUTORIAL2 = environ.get('TUTORIAL2', 'https://t.me/howtoopennlinks/20')
 TUTORIAL3 = environ.get('TUTORIAL3', 'https://t.me/how_to_open_modijilink/2')
 
 # auto files delete
