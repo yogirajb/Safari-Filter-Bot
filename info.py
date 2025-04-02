@@ -72,16 +72,16 @@ VERIFY_IMG = environ.get("VERIFY_IMG", "https://graph.org/file/1669ab9af68eaa62c
 VERIFY_URL = environ.get('VERIFY_URL', 'modijiurl.com')
 VERIFY_API = (environ.get('VERIFY_API', '04d39f6f93164655a957b4ffd397defff9183148'))
 
-TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "28800"))
-VERIFY_URL2 = environ.get('VERIFY_URL2', 'modijiurl.com')
-VERIFY_API2 = (environ.get('VERIFY_API2', '04d39f6f93164655a957b4ffd397defff9183148'))
+TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "14400"))
+VERIFY_URL2 = environ.get('VERIFY_URL2', 'inshorturl.com')
+VERIFY_API2 = (environ.get('VERIFY_API2', ''))
  
-THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "28800"))
-VERIFY_URL3 = environ.get('VERIFY_URL3', 'sharedisklinks.com')
+THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "14400"))
+VERIFY_URL3 = environ.get('VERIFY_URL3', 'modijiurl.com')
 VERIFY_API3 = (environ.get('VERIFY_API3', '04d39f6f93164655a957b4ffd397defff9183148'))
  
 TUTORIAL = environ.get('TUTORIAL', 'https://t.me/how_to_open_modijilink/2')
-TUTORIAL2 = environ.get('TUTORIAL2', 'https://t.me/how_to_open_modijilink/2')
+TUTORIAL2 = environ.get('TUTORIAL2', '')
 TUTORIAL3 = environ.get('TUTORIAL3', 'https://t.me/how_to_open_modijilink/2')
 
 # auto files delete
