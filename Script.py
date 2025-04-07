@@ -16,7 +16,7 @@ Jᴜꜱᴛ Sᴇɴᴅ Mᴇ Aɴʏ Mᴏᴠɪᴇꜱ & Sᴇʀɪᴇꜱ Nᴀᴍᴇ Aɴ�
                 'backup', 'primeroom', 'theprofffesorr', 'premium', 'vip', '4wap', 'toonworld4all', 'mlwbd',
                 'Telegram@alpacinodump', 'bollywood', "AllNewEnglishMovie", "7MovieRulz", "1TamilMV",
                 'Bazar', '_Corner20', 'CornersOfficial', 'support', 'iMediaShare', 'Uᴘʟᴏᴀᴅᴇᴅ', 'Bʏ', 'HollwoodNewsTG', 'alpacinodump', 
-                "Us", "boxoffice", "Links", "Linkz", "Villa", "Original", "bob", "Files1", "|", "MW", "Tg:-@VPFILL", "}", "{" 
+                "Tg:", "boxoffice", "Links", "Linkz", "Villa", "Original", "bob", "Files1", "|", "MW", "VPFILL", "}", "{" 
                 ]
     
     
