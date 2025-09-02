@@ -73,16 +73,16 @@ VERIFY_URL = environ.get('VERIFY_URL', 'papajiurl.com')
 VERIFY_API = (environ.get('VERIFY_API', '41ff6d51799b604c63f6cfe75eb5b7a58794a850'))
 
 TWO_VERIFY_GAP = int(environ.get('TWO_VERIFY_GAP', "14400"))
-VERIFY_URL2 = environ.get('VERIFY_URL2', 'modijiurl.com')
-VERIFY_API2 = (environ.get('VERIFY_API2', '04d39f6f93164655a957b4ffd397defff9183148'))
+VERIFY_URL2 = environ.get('VERIFY_URL2', 'shortxlinks.com')
+VERIFY_API2 = (environ.get('VERIFY_API2', '3b623c80e2c2534a5eae0bae35777c4c1aedd154'))
  
 THIRD_VERIFY_GAP = int(environ.get('THIRD_VERIFY_GAP', "14400"))
-VERIFY_URL3 = environ.get('VERIFY_URL3', 'papajiurl.com')
-VERIFY_API3 = (environ.get('VERIFY_API3', '41ff6d51799b604c63f6cfe75eb5b7a58794a850'))
+VERIFY_URL3 = environ.get('VERIFY_URL3', 'inshorturl.com')
+VERIFY_API3 = (environ.get('VERIFY_API3', 'f0b67e13bda5380f9b4d252b3c82092ec456966e'))
  
 TUTORIAL = environ.get('TUTORIAL', 'https://t.me/howtoopennlinks/19')
-TUTORIAL2 = environ.get('TUTORIAL2', 'https://t.me/how_to_open_modijilink/2')
-TUTORIAL3 = environ.get('TUTORIAL3', 'https://t.me/howtoopennlinks/19')
+TUTORIAL2 = environ.get('TUTORIAL2', 'https://t.me/howtoopennlinks/21')
+TUTORIAL3 = environ.get('TUTORIAL3', 'https://t.me/howtoopennlinks/20')
 
 # auto files delete
 AUTO_FILE_DELETE = is_enabled((environ.get('AUTO_FILE_DELETE', "True")), False)
