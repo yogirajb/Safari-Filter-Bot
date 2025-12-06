@@ -33,6 +33,42 @@ BTN_URL_REGEX = re.compile(
 )
 
 imdb = Cinemagoer()
+def ai_fix_query(query: str) -> str:
+    """
+    IMDb ki help se galat spelling ko sahi movie title me convert karta hai.
+    Agar kuch na mile ya error aaye to original query hi return karega.
+    """
+    try:
+        query = (query or "").strip()
+        if len(query) < 3:
+            return query
+
+        # Year alag nikaal lo agar end me ho (e.g. "avatr 2009")
+        year_match = re.findall(r'[1-2]\d{3}$', query, re.IGNORECASE)
+        if year_match:
+            year = year_match[0]
+            title = query.replace(year, "").strip()
+        else:
+            title = query
+
+        results = imdb.search_movie(title, results=1)
+        if not results:
+            return query
+
+        best = results[0]
+        fixed_title = best.get("title")
+        if not fixed_title:
+            return query
+
+        fixed_year = best.get("year")
+
+        # Agar IMDb se year mila to title + year return karo
+        if fixed_year:
+            return f"{fixed_title} {fixed_year}"
+
+        return fixed_title
+    except Exception:
+        return query
 BANNED = {}
 SMART_OPEN = '“'
 SMART_CLOSE = '”'
