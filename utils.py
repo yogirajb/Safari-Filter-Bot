@@ -1,5 +1,10 @@
 # This code has been modified by @Safaridev
 # Please do not remove this credit
+import os
+import requests
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+TMDB_API_BASE = "https://api.themoviedb.org/3"
+TMDB_IMG_BASE = "https://image.tmdb.org/t/p/original"
 import logging
 from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid, ChatAdminRequired, MessageIdInvalid, EmoticonInvalid, ReactionInvalid
 from info import *
@@ -15,16 +20,11 @@ from random import choice
 from asyncio import sleep
 import time
 import re
-import os
-TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
-TMDB_API_BASE = "https://api.themoviedb.org/3"
-TMDB_IMG_BASE = "https://image.tmdb.org/t/p/original"
 from datetime import datetime, timedelta, date, time
 import string
 from typing import List
 from database.users_chats_db import db
 from bs4 import BeautifulSoup
-import requests
 import aiohttp
 from types import SimpleNamespace
 from shortzy import Shortzy
