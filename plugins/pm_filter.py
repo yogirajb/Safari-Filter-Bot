@@ -1825,6 +1825,7 @@ async def auto_filter(client, msg, spoll=False):
                     message.chat.id, search, offset=0, filter=True
                 )
                 settings = await get_settings(message.chat.id)
+                settings["imdb"] = True
 
                 # 🧠 IMDb based AI spelling correction
                 if not files:
@@ -1875,6 +1876,7 @@ async def auto_filter(client, msg, spoll=False):
                 )
             )
             settings = await get_settings(message.chat.id)
+            settings["imdb"] = True
 
         # yahan tak files mil chuki hongi
 
