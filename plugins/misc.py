@@ -4,7 +4,7 @@ import os
 from pyrogram import Client, filters, enums
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
 from info import IMDB_TEMPLATE
-from utils import extract_user, get_file_id, get_poster
+from utils import extract_user, get_file_id, get_poster, ai_fix_query
 import time
 from datetime import datetime
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
@@ -178,88 +178,129 @@ async def who_is(client, message):
         )
     await status_message.delete()
 
-@Client.on_message(filters.command(["imdb", 'search']))
+@Client.on_message(filters.command(["imdb", "search"]))
 async def imdb_search(client, message):
-    if ' ' in message.text:
-        k = await message.reply('Searching ImDB')
-        r, title = message.text.split(None, 1)
-        movies = await get_poster(title, bulk=True)
-        if not movies:
-            return await message.reply("No results Found")
-        btn = [
-            [
-                InlineKeyboardButton(
-                    text=f"{movie.get('title')} - {movie.get('year')}",
-                    callback_data=f"imdb#{movie.movieID}",
-                )
-            ]
-            for movie in movies
-        ]
-        await k.edit('Here is what i found on IMDb', reply_markup=InlineKeyboardMarkup(btn))
-    else:
-        await message.reply('Give me a movie / series Name')
+    # user ne name diya ya nahi
+    if len(message.command) < 2:
+        return await message.reply("Give me a movie / series Name")
 
-@Client.on_callback_query(filters.regex('^imdb'))
-async def imdb_callback(bot: Client, quer_y: CallbackQuery):
-    i, movie = quer_y.data.split('#')
+    # /imdb avatar  → title = "avatar"
+    _, title = message.text.split(None, 1)
+
+    # 🔤 TMDB-based AI spell fix (jaise "avatr 2009" → "Avatar 2009")
+    fixed = ai_fix_query(title)
+    query = fixed or title
+
+    k = await message.reply("Searching ImDB")
+
+    # TMDB se movies list (bulk results)
+    movies = await get_poster(query, bulk=True)
+
+    if not movies:
+        return await k.edit("No results Found")
+
+    # buttons: "Avatar (2009)", "Avatar: The Way of Water (2022)", ...
+    btn = []
+    for movie in movies:
+        m_title = movie.get("title") or movie.get("name")
+        year = ""
+        rd = movie.get("release_date") or movie.get("first_air_date") or ""
+        if rd:
+            year = f" ({rd[:4]})"
+
+        btn.append([
+            InlineKeyboardButton(
+                text=f"{m_title}{year}",
+                callback_data=f"imdb#{movie.movieID}",
+            )
+        ])
+
+    await k.edit("Here is what I found on TMDb", reply_markup=InlineKeyboardMarkup(btn))
+
+
+@Client.on_callback_query(filters.regex(r"^imdb#"))
+async def imdb_callback(bot: Client, query: CallbackQuery):
+    _tag, movie = query.data.split("#", 1)
+
+    # id=True → TMDB se full details + poster
     imdb = await get_poster(query=movie, id=True)
-    btn = [
-            [
-                InlineKeyboardButton(
-                    text=f"{imdb.get('title')}",
-                    url=imdb['url'],
-                )
-            ]
-        ]
-    message = quer_y.message.reply_to_message or quer_y.message
-    if imdb:
-        caption = IMDB_TEMPLATE.format(
-            query = imdb['title'],
-            title = imdb['title'],
-            votes = imdb['votes'],
-            aka = imdb["aka"],
-            seasons = imdb["seasons"],
-            box_office = imdb['box_office'],
-            localized_title = imdb['localized_title'],
-            kind = imdb['kind'],
-            imdb_id = imdb["imdb_id"],
-            cast = imdb["cast"],
-            runtime = imdb["runtime"],
-            countries = imdb["countries"],
-            certificates = imdb["certificates"],
-            languages = imdb["languages"],
-            director = imdb["director"],
-            writer = imdb["writer"],
-            producer = imdb["producer"],
-            composer = imdb["composer"],
-            cinematographer = imdb["cinematographer"],
-            music_team = imdb["music_team"],
-            distributors = imdb["distributors"],
-            release_date = imdb['release_date'],
-            year = imdb['year'],
-            genres = imdb['genres'],
-            poster = imdb['poster'],
-            plot = imdb['plot'],
-            rating = imdb['rating'],
-            url = imdb['url'],
-            **locals()
+
+    if not imdb:
+        await query.answer("No results found", show_alert=True)
+        return
+
+    btn = [[
+        InlineKeyboardButton(
+            text=f"{imdb.get('title')}",
+            url=imdb["url"],
         )
-    else:
-        caption = "No Results"
-    if imdb.get('poster'):
+    ]]
+
+    message = query.message.reply_to_message or query.message
+
+    caption = IMDB_TEMPLATE.format(
+        query=imdb['title'],
+        title=imdb['title'],
+        votes=imdb['votes'],
+        aka=imdb["aka"],
+        seasons=imdb["seasons"],
+        box_office=imdb['box_office'],
+        localized_title=imdb['localized_title'],
+        kind=imdb['kind'],
+        imdb_id=imdb["imdb_id"],
+        cast=imdb["cast"],
+        runtime=imdb["runtime"],
+        countries=imdb["countries"],
+        certificates=imdb["certificates"],
+        languages=imdb["languages"],
+        director=imdb["director"],
+        writer=imdb["writer"],
+        producer=imdb["producer"],
+        composer=imdb["composer"],
+        cinematographer=imdb["cinematographer"],
+        music_team=imdb["music_team"],
+        distributors=imdb["distributors"],
+        release_date=imdb['release_date'],
+        year=imdb['year'],
+        genres=imdb['genres'],
+        poster=imdb['poster'],
+        plot=imdb['plot'],
+        rating=imdb['rating'],
+        url=imdb['url'],
+        **locals()
+    )
+
+    if imdb.get("poster"):
         try:
-            await quer_y.message.reply_photo(photo=imdb['poster'], caption=caption, reply_markup=InlineKeyboardMarkup(btn))
+            await message.reply_photo(
+                photo=imdb["poster"],
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(btn),
+            )
         except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty):
-            pic = imdb.get('poster')
-            poster = pic.replace('.jpg', "._V1_UX360.jpg")
-            await quer_y.message.reply_photo(photo=poster, caption=caption, reply_markup=InlineKeyboardMarkup(btn))
+            # backup size
+            pic = imdb.get("poster")
+            poster = pic.replace(".jpg", "._V1_UX360.jpg")
+            await message.reply_photo(
+                photo=poster,
+                caption=caption,
+                reply_markup=InlineKeyboardMarkup(btn),
+            )
         except Exception as e:
             logger.exception(e)
-            await quer_y.message.reply(caption, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=False)
-        await quer_y.message.delete()
+            await message.reply_text(
+                caption,
+                reply_markup=InlineKeyboardMarkup(btn),
+                disable_web_page_preview=False,
+            )
     else:
-        await quer_y.message.edit(caption, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=False)
-    await quer_y.answer()
-        
+        await message.reply_text(
+            caption,
+            reply_markup=InlineKeyboardMarkup(btn),
+            disable_web_page_preview=False,
+        )
+
+    await query.message.delete()
+    await query.answer()
 
         
