@@ -20,7 +20,7 @@ from database.users_chats_db import db
 from database.safari_reffer import sdb
 from info import *
 from .pm_filter import auto_filter
-from utils import get_settings, get_size, is_subscribed, is_req_subscribed, save_group_settings, temp, get_shortlink, get_seconds
+from utils import get_settings, get_size, is_subscribed, is_req_subscribed, save_group_settings, temp, get_shortlink, get_seconds, get_poster
 from database.connections_mdb import active_connection
 import re
 import json
