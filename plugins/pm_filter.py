@@ -532,6 +532,23 @@ async def quality_check(bot, query):
                     pass
                 await query.answer()
         else:
+            else:
+            # yaha seasons ke hisaab se koi file nahi mili → admin ko request bhejo
+            try:
+                await bot.send_message(
+                    REQ_CHANNEL,
+                    f"📝 #REQUESTED_CONTENT 📝\n\n"
+                    f"ʙᴏᴛ - {temp.B_NAME}\n"
+                    f"ɴᴀᴍᴇ - {query.from_user.mention} (<code>{query.from_user.id}</code>)\n"
+                    f"Rᴇǫᴜᴇꜱᴛ - <code>{movie}</code>"
+                )
+            except Exception as e:
+                logger.error(f"Failed to send season request to REQ_CHANNEL: {e}")
+
+            return await query.answer(
+                f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.",
+                show_alert=True
+                )
             return await query.answer(f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.", show_alert=True)
     except Exception as e:
             await query.answer(f"error found out\n\n{e}", show_alert=True)
@@ -783,6 +800,23 @@ async def episode_check(bot, query):
                     pass
                 await query.answer()
         else:
+            else:
+            # yaha episode ke hisaab se koi file nahi mili → admin ko request bhejo
+            try:
+                await bot.send_message(
+                    REQ_CHANNEL,
+                    f"📝 #REQUESTED_CONTENT 📝\n\n"
+                    f"ʙᴏᴛ - {temp.B_NAME}\n"
+                    f"ɴᴀᴍᴇ - {query.from_user.mention} (<code>{query.from_user.id}</code>)\n"
+                    f"Rᴇǫᴜᴇꜱᴛ - <code>{movie}</code>"
+                )
+            except Exception as e:
+                logger.error(f"Failed to send episode request to REQ_CHANNEL: {e}")
+
+            return await query.answer(
+                f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.",
+                show_alert=True
+    )
             return await query.answer(f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.", show_alert=True)
     except Exception as e:
             await query.answer(f"error found out\n\n{e}", show_alert=True)
