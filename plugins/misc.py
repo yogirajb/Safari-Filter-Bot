@@ -180,50 +180,57 @@ async def who_is(client, message):
 
 @Client.on_message(filters.command(["imdb", "search"]))
 async def imdb_search(client, message):
-    # user ne name diya ya nahi
+    # /imdb command ke baad naam diya ya nahi
     if len(message.command) < 2:
         return await message.reply("Give me a movie / series Name")
 
-    # /imdb avatar  → title = "avatar"
-    _, title = message.text.split(None, 1)
+    # /imdb avatar 2009  ->  raw_title = "avatar 2009"
+    _, raw_title = message.text.split(None, 1)
 
-    # 🔤 TMDB-based AI spell fix (jaise "avatr 2009" → "Avatar 2009")
-    fixed = ai_fix_query(title)
-    query = fixed or title
+    # 🔤 TMDB based AI fix (spelling + year handle)
+    fixed = ai_fix_query(raw_title)
+    query = fixed or raw_title
 
-    k = await message.reply("Searching ImDB")
+    k = await message.reply(f"Searching ImDB")
 
-    # TMDB se movies list (bulk results)
+    # TMDB se bulk list
     movies = await get_poster(query, bulk=True)
+
+    # agar AI-fix ke baad bhi nahi mila to ek baar original se bhi try karo
+    if not movies and fixed and fixed.lower() != raw_title.lower():
+        movies = await get_poster(raw_title, bulk=True)
 
     if not movies:
         return await k.edit("No results Found")
 
-    # buttons: "Avatar (2009)", "Avatar: The Way of Water (2022)", ...
     btn = []
-    for movie in movies:
-        m_title = movie.get("title") or movie.get("name")
+    for m in movies:
+        title = m.get("title") or m.get("name") or "Unknown"
+        # TMDB search response me year direct nahi aata, release_date se nikalte hain
         year = ""
-        rd = movie.get("release_date") or movie.get("first_air_date") or ""
+        rd = m.get("release_date") or m.get("first_air_date") or ""
         if rd:
             year = f" ({rd[:4]})"
 
         btn.append([
             InlineKeyboardButton(
-                text=f"{m_title}{year}",
-                callback_data=f"imdb#{movie.movieID}",
+                text=f"{title}{year}",
+                callback_data=f"imdb#{m.movieID}",
             )
         ])
 
-    await k.edit("Here is what I found on TMDb", reply_markup=InlineKeyboardMarkup(btn))
+    await k.edit(
+        "Here is what I found on IMDb",
+        reply_markup=InlineKeyboardMarkup(btn)
+    )
 
 
 @Client.on_callback_query(filters.regex(r"^imdb#"))
 async def imdb_callback(bot: Client, query: CallbackQuery):
-    _tag, movie = query.data.split("#", 1)
+    _tag, movie_id = query.data.split("#", 1)
 
-    # id=True → TMDB se full details + poster
-    imdb = await get_poster(query=movie, id=True)
+    # id=True  -> get_poster TMDB se full details + poster laayega
+    imdb = await get_poster(query=movie_id, id=True)
 
     if not imdb:
         await query.answer("No results found", show_alert=True)
@@ -278,7 +285,6 @@ async def imdb_callback(bot: Client, query: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup(btn),
             )
         except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty):
-            # backup size
             pic = imdb.get("poster")
             poster = pic.replace(".jpg", "._V1_UX360.jpg")
             await message.reply_photo(
