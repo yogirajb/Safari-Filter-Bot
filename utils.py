@@ -23,6 +23,7 @@ from database.users_chats_db import db
 from bs4 import BeautifulSoup
 import requests
 import aiohttp
+from types import SimpleNamespace
 from shortzy import Shortzy
 
 logger = logging.getLogger(__name__)
