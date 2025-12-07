@@ -403,7 +403,7 @@ async def language_check(bot, query):
                     pass
                 await query.answer()
         else:
-        # user ko alert
+            # user ko alert
         await query.answer(
             f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}.",
             show_alert=True
@@ -549,7 +549,7 @@ async def quality_check(bot, query):
                 except MessageNotModified:
                     pass
                 await query.answer()
-            else:
+        else:
             # user ko alert
     await query.answer(
         f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}.",
@@ -694,7 +694,7 @@ async def seasons_check(bot, query):
                     pass
                 await query.answer()
         else:
-        # user ko alert
+            # user ko alert
         await query.answer(
             f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}.",
             show_alert=True
@@ -841,7 +841,7 @@ async def episode_check(bot, query):
                     pass
                 await query.answer()
         else:
-        # user ko alert
+            # user ko alert
         await query.answer(
             f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}.",
             show_alert=True
