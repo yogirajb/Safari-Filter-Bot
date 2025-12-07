@@ -37,6 +37,29 @@ BTN_URL_REGEX = re.compile(
 )
 
 imdb = Cinemagoer()
+BANNED = {}
+SMART_OPEN = '“'
+SMART_CLOSE = '”'
+START_CHAR = ('\'', '"', SMART_OPEN)
+
+# temp db for banned 
+class temp(object):
+    BANNED_USERS = []
+    BANNED_CHATS = []
+    ME = None
+    CURRENT = int(os.environ.get("SKIP", 2))
+    CANCEL = False
+    MELCOW = {}
+    U_NAME = None
+    B_NAME = None
+    SETTINGS = {}
+    KEYWORD = {}
+    GETALL = {}
+    SPELL_CHECK = {}
+    IMDB_CAP = {}
+    CHAT = {}
+    
+
 def ai_fix_query(query: str) -> str:
     """
     TMDb ki help se galat spelling ko sahi movie title me convert karta hai.
