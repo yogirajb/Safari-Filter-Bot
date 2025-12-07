@@ -183,9 +183,14 @@ async def broadcast_messages(user_id, message):
         logging.info(f"{user_id} - Blocked the bot.")
         return False, "Blocked"
     except PeerIdInvalid:
-        await dasync 
-        
-def get_poster(query, bulk=False, id=False, file=None):
+        await db.delete_user(int(user_id))
+        logging.info(f"{user_id} - PeerIdInvalid")
+        return False, "Error"
+    except Exception:
+        return False, "Error"
+
+
+async def get_poster(query, bulk=False, id=False, file=None):
     """
     TMDb se poster + details laata hai.
     IMDb library use nahi karte ab.
@@ -339,11 +344,7 @@ def get_poster(query, bulk=False, id=False, file=None):
         }
     except Exception as e:
         logger.error(f"TMDb get_poster error: {e}")
-        return Noneb.delete_user(int(user_id))
-        logging.info(f"{user_id} - PeerIdInvalid")
-        return False, "Error"
-    except Exception as e:
-        return False, "Error"
+        return None
 
 async def get_settings(group_id):
     settings = temp.SETTINGS.get(group_id)
