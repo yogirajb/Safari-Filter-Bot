@@ -16,6 +16,9 @@ from asyncio import sleep
 import time
 import re
 import os
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+TMDB_API_BASE = "https://api.themoviedb.org/3"
+TMDB_IMG_BASE = "https://image.tmdb.org/t/p/original"
 from datetime import datetime, timedelta, date, time
 import string
 from typing import List
@@ -36,61 +39,55 @@ BTN_URL_REGEX = re.compile(
 imdb = Cinemagoer()
 def ai_fix_query(query: str) -> str:
     """
-    IMDb ki help se galat spelling ko sahi movie title me convert karta hai.
+    TMDb ki help se galat spelling ko sahi movie title me convert karta hai.
     Agar kuch na mile ya error aaye to original query hi return karega.
     """
     try:
+        if not TMDB_API_KEY:
+            return query
+
         query = (query or "").strip()
         if len(query) < 3:
             return query
 
-        # Year alag nikaal lo agar end me ho (e.g. "avatr 2009")
-        year_match = re.findall(r'[1-2]\d{3}$', query, re.IGNORECASE)
-        if year_match:
-            year = year_match[0]
+        # Year alag nikaal lo (jaise "avatr 2009")
+        year = None
+        m = re.findall(r"[1-2]\d{3}$", query)
+        if m:
+            year = m[0]
             title = query.replace(year, "").strip()
         else:
             title = query
 
-        results = imdb.search_movie(title, results=1)
+        params = {
+            "api_key": TMDB_API_KEY,
+            "query": title,
+            "include_adult": False,
+        }
+        if year:
+            params["year"] = int(year)
+
+        r = requests.get(f"{TMDB_API_BASE}/search/movie", params=params, timeout=10)
+        if r.status_code != 200:
+            return query
+
+        data = r.json()
+        results = data.get("results") or []
         if not results:
             return query
 
         best = results[0]
-        fixed_title = best.get("title")
+        fixed_title = best.get("title") or best.get("name")
+        release_date = (best.get("release_date") or "")[:4]
+
         if not fixed_title:
             return query
 
-        fixed_year = best.get("year")
-
-        # Agar IMDb se year mila to title + year return karo
-        if fixed_year:
-            return f"{fixed_title} {fixed_year}"
-
+        if release_date:
+            return f"{fixed_title} {release_date}"
         return fixed_title
     except Exception:
         return query
-BANNED = {}
-SMART_OPEN = '“'
-SMART_CLOSE = '”'
-START_CHAR = ('\'', '"', SMART_OPEN)
-
-# temp db for banned 
-class temp(object):
-    BANNED_USERS = []
-    BANNED_CHATS = []
-    ME = None
-    CURRENT=int(os.environ.get("SKIP", 2))
-    CANCEL = False
-    MELCOW = {}
-    U_NAME = None
-    B_NAME = None
-    SETTINGS = {}
-    KEYWORD = {}
-    GETALL = {}
-    SPELL_CHECK = {}
-    IMDB_CAP = {}
-    CHAT = {}
 
 async def check_reset_time():
     tz = pytz.timezone('Asia/Kolkata')
@@ -170,85 +167,6 @@ async def is_subscribed(bot, user_id, channel_id):
             return True
     return False
 
-async def get_poster(query, bulk=False, id=False, file=None):
-    if not id:
-        # https://t.me/GetTGLink/4183
-        query = (query.strip()).lower()
-        title = query
-        year = re.findall(r'[1-2]\d{3}$', query, re.IGNORECASE)
-        if year:
-            year = list_to_str(year[:1])
-            title = (query.replace(year, "")).strip()
-        elif file is not None:
-            year = re.findall(r'[1-2]\d{3}', file, re.IGNORECASE)
-            if year:
-                year = list_to_str(year[:1]) 
-        else:
-            year = None
-        movieid = imdb.search_movie(title.lower(), results=10)
-        if not movieid:
-            return None
-        if year:
-            filtered=list(filter(lambda k: str(k.get('year')) == str(year), movieid))
-            if not filtered:
-                filtered = movieid
-        else:
-            filtered = movieid
-        movieid=list(filter(lambda k: k.get('kind') in ['movie', 'tv series'], filtered))
-        if not movieid:
-            movieid = filtered
-        if bulk:
-            return movieid
-        movieid = movieid[0].movieID
-    else:
-        movieid = query
-    movie = imdb.get_movie(movieid)
-    if movie.get("original air date"):
-        date = movie["original air date"]
-    elif movie.get("year"):
-        date = movie.get("year")
-    else:
-        date = "N/A"
-    plot = ""
-    if not LONG_IMDB_DESCRIPTION:
-        plot = movie.get('plot')
-        if plot and len(plot) > 0:
-            plot = plot[0]
-    else:
-        plot = movie.get('plot outline')
-    if plot and len(plot) > 800:
-        plot = plot[0:800] + "..."
-
-    return {
-        'title': movie.get('title'),
-        'votes': movie.get('votes'),
-        "aka": list_to_str(movie.get("akas")),
-        "seasons": movie.get("number of seasons"),
-        "box_office": movie.get('box office'),
-        'localized_title': movie.get('localized title'),
-        'kind': movie.get("kind"),
-        "imdb_id": f"tt{movie.get('imdbID')}",
-        "cast": list_to_str(movie.get("cast")),
-        "runtime": list_to_str(movie.get("runtimes")),
-        "countries": list_to_str(movie.get("countries")),
-        "certificates": list_to_str(movie.get("certificates")),
-        "languages": list_to_str(movie.get("languages")),
-        "director": list_to_str(movie.get("director")),
-        "writer":list_to_str(movie.get("writer")),
-        "producer":list_to_str(movie.get("producer")),
-        "composer":list_to_str(movie.get("composer")) ,
-        "cinematographer":list_to_str(movie.get("cinematographer")),
-        "music_team": list_to_str(movie.get("music department")),
-        "distributors": list_to_str(movie.get("distributors")),
-        'release_date': date,
-        'year': movie.get('year'),
-        'genres': list_to_str(movie.get("genres")),
-        'poster': movie.get('full-size cover url'),
-        'plot': plot,
-        'rating': str(movie.get("rating")),
-        'url':f'https://www.imdb.com/title/tt{movieid}'
-    }
-# https://github.com/odysseusmax/animated-lamp/blob/2ef4730eb2b5f0596ed6d03e7b05243d93e3415b/bot/utils/broadcast.py#L37
 
 async def broadcast_messages(user_id, message):
     try:
@@ -265,7 +183,163 @@ async def broadcast_messages(user_id, message):
         logging.info(f"{user_id} - Blocked the bot.")
         return False, "Blocked"
     except PeerIdInvalid:
-        await db.delete_user(int(user_id))
+        await dasync 
+        
+def get_poster(query, bulk=False, id=False, file=None):
+    """
+    TMDb se poster + details laata hai.
+    IMDb library use nahi karte ab.
+    Return format purane get_poster jaisa hi rakha gaya hai
+    taaki baaki code na toote.
+    """
+    if not TMDB_API_KEY:
+        return None
+
+    try:
+        # ----- Title + Year nikaalna -----
+        if not id:
+            q = (query or "").strip().lower()
+            title = q
+            year = None
+
+            # query ke end me year ho to (e.g. "avatar 2009")
+            m = re.findall(r"[1-2]\d{3}$", q)
+            if m:
+                year = m[0]
+                title = q.replace(year, "").strip()
+            elif file is not None:
+                m = re.findall(r"[1-2]\d{3}", file)
+                if m:
+                    year = m[0]
+
+            # ----- TMDb search -----
+            params = {
+                "api_key": TMDB_API_KEY,
+                "query": title,
+                "include_adult": False,
+            }
+            if year:
+                try:
+                    params["year"] = int(year)
+                except ValueError:
+                    pass
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{TMDB_API_BASE}/search/movie", params=params) as resp:
+                    data = await resp.json()
+
+            results = data.get("results") or []
+            if not results:
+                return None
+
+            # bulk=True: list chahiye (advantage_spell_chok ke liye)
+            if bulk:
+                movies = []
+                for r in results[:10]:
+                    movies.append(
+                        SimpleNamespace(
+                            movieID=r.get("id"),
+                            get=lambda key, r=r: r.get(key),
+                            title=r.get("title") or r.get("name"),
+                        )
+                    )
+                return movies
+
+            # normal case: best match
+            movie_id = results[0].get("id")
+        else:
+            movie_id = int(query)
+
+        # ----- TMDb movie details -----
+        params = {
+            "api_key": TMDB_API_KEY,
+            "append_to_response": "credits",
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{TMDB_API_BASE}/movie/{movie_id}", params=params) as resp:
+                movie = await resp.json()
+
+        if not movie or movie.get("success") is False:
+            return None
+
+        # ----- Basic fields -----
+        title = movie.get("title") or movie.get("name")
+        release_date = movie.get("release_date") or ""
+        year = release_date[:4] if release_date else movie.get("first_air_date", "")[:4]
+
+        poster_path = movie.get("poster_path")
+        poster_url = f"{TMDB_IMG_BASE}{poster_path}" if poster_path else None
+
+        overview = movie.get("overview") or "N/A"
+        if overview and len(overview) > 800:
+            overview = overview[:800] + "..."
+
+        genres = ", ".join([g.get("name") for g in movie.get("genres") or []]) or "N/A"
+        countries = ", ".join([c.get("name") for c in movie.get("production_countries") or []]) or "N/A"
+        languages = ", ".join([l.get("english_name") for l in movie.get("spoken_languages") or []]) or "N/A"
+
+        # votes / rating / runtime
+        votes = movie.get("vote_count")
+        rating = movie.get("vote_average")
+        runtime = movie.get("runtime") or "N/A"
+
+        # credits -> director, cast
+        credits = movie.get("credits") or {}
+        cast_list = [c.get("name") for c in credits.get("cast") or []][:10]
+        cast = ", ".join(cast_list) or "N/A"
+
+        crew = credits.get("crew") or []
+        directors = [c.get("name") for c in crew if c.get("job") == "Director"]
+        writers = [c.get("name") for c in crew if c.get("department") == "Writing"]
+        producers = [c.get("name") for c in crew if c.get("job") == "Producer"]
+        composers = [c.get("name") for c in crew if "Music" in (c.get("department") or "")]
+
+        director = ", ".join(directors) or "N/A"
+        writer = ", ".join(writers) or "N/A"
+        producer = ", ".join(producers) or "N/A"
+        composer = ", ".join(composers) or "N/A"
+
+        # IMDb ID (agar mila) warna TMDb link use karo
+        imdb_id = movie.get("imdb_id")
+        if imdb_id:
+            url = f"https://www.imdb.com/title/{imdb_id}"
+            imdb_id_str = imdb_id
+        else:
+            url = f"https://www.themoviedb.org/movie/{movie_id}"
+            imdb_id_str = f"tmdb-{movie_id}"
+
+        return {
+            "title": title,
+            "votes": votes,
+            "aka": "N/A",
+            "seasons": "N/A",
+            "box_office": movie.get("revenue") or "N/A",
+            "localized_title": movie.get("original_title") or title,
+            "kind": "movie",
+            "imdb_id": imdb_id_str,
+            "cast": cast,
+            "runtime": str(runtime),
+            "countries": countries,
+            "certificates": "N/A",
+            "languages": languages,
+            "director": director,
+            "writer": writer,
+            "producer": producer,
+            "composer": composer,
+            "cinematographer": "N/A",
+            "music_team": "N/A",
+            "distributors": "N/A",
+            "release_date": release_date or "N/A",
+            "year": year or "N/A",
+            "genres": genres,
+            "poster": poster_url,
+            "plot": overview,
+            "rating": str(rating) if rating is not None else "N/A",
+            "url": url,
+        }
+    except Exception as e:
+        logger.error(f"TMDb get_poster error: {e}")
+        return Noneb.delete_user(int(user_id))
         logging.info(f"{user_id} - PeerIdInvalid")
         return False, "Error"
     except Exception as e:
