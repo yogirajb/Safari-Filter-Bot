@@ -8,7 +8,6 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from database.ia_filterdb import get_search_results, get_all_files
 
-imdb = IMDb()
 
 async def ai_spell_check(chat_id, wrong_name):
     try:  
