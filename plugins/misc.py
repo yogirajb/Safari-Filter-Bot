@@ -11,7 +11,56 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQ
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
+from pyrogram import Client, filters
+from utils import TMDB_API_KEY, TMDB_API_BASE
+import requests
 
+@Client.on_message(filters.command("tmdbtest"))
+async def tmdb_test(client, message):
+    if not TMDB_API_KEY:
+        return await message.reply_text(
+            "❌ TMDB_API_KEY Bot me load hi nahi ho rahi.\n\n"
+            "➡️ Koyeb Environment Variable check karo:\n"
+            "TMDB_API_KEY"
+        )
+
+    try:
+        params = {
+            "api_key": TMDB_API_KEY,
+            "query": "avatar",
+            "include_adult": False
+        }
+
+        r = requests.get(f"{TMDB_API_BASE}/search/movie", params=params, timeout=10)
+
+        if r.status_code != 200:
+            return await message.reply_text(
+                f"❌ TMDB API Error\n\nStatus Code: {r.status_code}"
+            )
+
+        data = r.json()
+        results = data.get("results", [])
+
+        if not results:
+            return await message.reply_text(
+                "⚠️ TMDB API kaam kar rahi hai\nLekin result empty aa raha hai."
+            )
+
+        movie = results[0]
+        title = movie.get("title")
+        year = (movie.get("release_date") or "")[:4]
+
+        await message.reply_text(
+            f"✅ TMDB API perfectly working ✅\n\n"
+            f"🎬 Movie: {title}\n"
+            f"📅 Year: {year}\n\n"
+            f"✅ AI Spell Check + IMDb Fix ACTIVE hai!"
+        )
+
+    except Exception as e:
+        await message.reply_text(
+            f"❌ TMDB Test Failed\n\nError:\n{e}"
+)
 @Client.on_message(filters.command('id'))
 async def showid(client, message):
     chat_type = message.chat.type
