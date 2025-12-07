@@ -1800,10 +1800,9 @@ async def auto_filter(client, msg, spoll=False):
                 find = search.split(" ")
                 search = ""
                 removes = [
-                    "in", "upload", "series", "full", "horror", "thriller", "mystery",
-                    "print", "file", "send", "chahiye", "chiye", "movi", "movie",
-                    "bhejo", "dijiye", "jaldi", "hd", "bollywood", "hollywood",
-                    "south", "karo"
+                    "in","upload","series","full","horror","thriller","mystery",
+                    "print","file","send","chahiye","chiye","movi","movie",
+                    "bhejo","dijiye","jaldi","hd","bollywood","hollywood","south","karo"
                 ]
                 for x in find:
                     if x in removes:
@@ -1827,25 +1826,23 @@ async def auto_filter(client, msg, spoll=False):
                 )
                 settings = await get_settings(message.chat.id)
 
-                # 🧠 IMDb based AI spelling correction (hamara ai_fix_query)
+                # 🧠 IMDb based AI spelling correction
                 if not files:
                     fixed = ai_fix_query(search)
                     if fixed and fixed.lower() != search.lower():
                         files, offset, total_results = await get_search_results(
                             message.chat.id, fixed, offset=0, filter=True
                         )
-                        search = fixed  # aage sab isi se chalega
+                        search = fixed  # ab aage sab isi se chalega
 
-                # Ab bhi file na mile to purana spell system
+                # Agar ab bhi files nahi mile → purana AI spell system
                 if not files:
                     await m.delete()
                     if settings["spell_check"]:
                         ai_sts = await message.reply_sticker(
                             sticker="CAACAgQAAxkBAAEq2R9mipkiW9ACyj7oQXznwKTPHqNCXQACkBUAA3mRUZGx4GwLX9XCHgQ"
                         )
-                        st = await message.reply(
-                            '<b>Ai is Cheking For Your Spelling. Please Wait.</b>'
-                        )
+                        st = await message.reply('<b>Ai is Cheking For Your Spelling. Please Wait.</b>')
                         is_misspelled = await ai_spell_check(
                             chat_id=message.chat.id,
                             wrong_name=search
