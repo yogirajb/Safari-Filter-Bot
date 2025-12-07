@@ -13,7 +13,12 @@ from info import ADMINS, PREMIUM_LOGS
 from datetime import datetime, timedelta
 from pyrogram import Client, filters
 from database.users_chats_db import db
-
+from fuzzywuzzy import process   # agar kahin use nahi ho raha ho to hata bhi sakte ho
+from utils import temp, ai_fix_query
+from info import REQ_CHANNEL, GRP_LNK
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from database.ia_filterdb import get_search_results, get_all_files
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
