@@ -404,7 +404,7 @@ async def language_check(bot, query):
                 await query.answer()
         else:
             # user ko alert
-        await query.answer(
+    await query.answer(
             f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}.",
             show_alert=True
         )
