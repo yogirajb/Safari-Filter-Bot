@@ -1007,30 +1007,48 @@ async def episode_check(bot, query):
     try:
         curr_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
         _, userid, episode = query.data.split("#")
+
         if int(userid) not in [query.from_user.id, 0]:
-            return await query.answer(script.ALRT_TXT.format(query.from_user.first_name), show_alert=True)
+            return await query.answer(
+                script.ALRT_TXT.format(query.from_user.first_name),
+                show_alert=True
+            )
+
         if episode == "unknown":
-            return await query.answer("Sᴇʟᴇᴄᴛ ᴀɴʏ ᴇᴘ ғʀᴏᴍ ᴛʜᴇ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs !", show_alert=True)
+            return await query.answer(
+                "Sᴇʟᴇᴄᴛ ᴀɴʏ ᴇᴘ ғʀᴏᴍ ᴛʜᴇ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴs !",
+                show_alert=True
+            )
+
         movie = temp.KEYWORD.get(query.from_user.id)
         if episode != "home":
             movie = f"{movie} {episode}"
-        files, offset, total_results = await get_search_results(query.message.chat.id, movie, offset=0, filter=True)
+
+        files, offset, total_results = await get_search_results(
+            query.message.chat.id,
+            movie,
+            offset=0,
+            filter=True
+        )
+
         if files:
             settings = await get_settings(query.message.chat.id)
             key = f"{query.message.chat.id}-{query.message.id}"
             temp.GETALL[key] = files
             temp.CHAT[query.from_user.id] = query.message.chat.id
+
             if not settings['button']:
                 btn = [
                     [
                         InlineKeyboardButton(
-                            text=f"[{get_size(file.file_size)}] {file.file_name}", callback_data=f'files#{file.file_id}'
+                            text=f"[{get_size(file.file_size)}] {file.file_name}",
+                            callback_data=f'files#{file.file_id}'
                         ),
                     ]
                     for file in files
                 ]
                 btn.insert(0, [
-                    InlineKeyboardButton("Sᴇᴀꜱᴏɴꜱ", callback_data=f"seas#{userid}"), 
+                    InlineKeyboardButton("Sᴇᴀꜱᴏɴꜱ", callback_data=f"seas#{userid}"),
                     InlineKeyboardButton("! Sᴇʟᴇᴄᴛ Aɢᴀɪɴ !", callback_data=f"epi#{userid}")
                 ])
                 btn.insert(0, [
@@ -1043,7 +1061,7 @@ async def episode_check(bot, query):
             else:
                 btn = []
                 btn.insert(0, [
-                    InlineKeyboardButton("Sᴇᴀꜱᴏɴꜱ", callback_data=f"seas#{userid}"), 
+                    InlineKeyboardButton("Sᴇᴀꜱᴏɴꜱ", callback_data=f"seas#{userid}"),
                     InlineKeyboardButton("! Sᴇʟᴇᴄᴛ Aɢᴀɪɴ !", callback_data=f"epi#{userid}")
                 ])
                 btn.insert(0, [
@@ -1053,70 +1071,97 @@ async def episode_check(bot, query):
                 btn.insert(0, [
                     InlineKeyboardButton("! Sᴇɴᴅ Aʟʟ !", callback_data=f"sendfiles#{key}")
                 ])
+
             if offset != "":
                 BUTTONS[key] = movie
                 req = userid
                 try:
                     if settings['max_btn']:
                         btn.append(
-                            [InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"), InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/10)}",callback_data="pages"), InlineKeyboardButton(text="𝐍𝐄𝐗𝐓 ➪",callback_data=f"next_{req}_{key}_{offset}")]
+                            [
+                                InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"),
+                                InlineKeyboardButton(
+                                    text=f"1/{math.ceil(int(total_results)/10)}",
+                                    callback_data="pages"
+                                ),
+                                InlineKeyboardButton(
+                                    text="𝐍𝐄𝐗𝐓 ➪",
+                                    callback_data=f"next_{req}_{key}_{offset}"
+                                )
+                            ]
                         )
-    
                     else:
                         btn.append(
-                            [InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"), InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/int(MAX_B_TN))}",callback_data="pages"), InlineKeyboardButton(text="𝐍𝐄𝐗𝐓 ➪",callback_data=f"next_{req}_{key}_{offset}")]
+                            [
+                                InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"),
+                                InlineKeyboardButton(
+                                    text=f"1/{math.ceil(int(total_results)/int(MAX_B_TN))}",
+                                    callback_data="pages"
+                                ),
+                                InlineKeyboardButton(
+                                    text="𝐍𝐄𝐗𝐓 ➪",
+                                    callback_data=f"next_{req}_{key}_{offset}"
+                                )
+                            ]
                         )
                 except KeyError:
                     await save_group_settings(query.message.chat.id, 'max_btn', True)
                     btn.append(
-                        [InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"), InlineKeyboardButton(text=f"1/{math.ceil(int(total_results)/10)}",callback_data="pages"), InlineKeyboardButton(text="𝐍𝐄𝐗𝐓 ➪",callback_data=f"next_{req}_{key}_{offset}")]
+                        [
+                            InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"),
+                            InlineKeyboardButton(
+                                text=f"1/{math.ceil(int(total_results)/10)}",
+                                callback_data="pages"
+                            ),
+                            InlineKeyboardButton(
+                                text="𝐍𝐄𝐗𝐓 ➪",
+                                callback_data=f"next_{req}_{key}_{offset}"
+                            )
+                        ]
                     )
             else:
                 btn.append(
-                    [InlineKeyboardButton(text="𝐍𝐎 𝐌𝐎𝐑𝐄 𝐏𝐀𝐆𝐄𝐒 𝐀𝐕𝐀𝐈𝐋𝐀𝐁𝐋𝐄",callback_data="pages")]
+                    [InlineKeyboardButton(
+                        text="𝐍𝐎 𝐌𝐎𝐑𝐄 𝐏𝐀𝐆𝐄𝐒 𝐀𝐕𝐀𝐈𝐋𝐀𝐁𝐋𝐄",
+                        callback_data="pages"
+                    )]
                 )
+
             if settings.get("button", SINGLE_BUTTON):
                 cur_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
-                time_difference = timedelta(hours=cur_time.hour, minutes=cur_time.minute, seconds=(cur_time.second+(cur_time.microsecond/1000000))) - timedelta(hours=curr_time.hour, minutes=curr_time.minute, seconds=(curr_time.second+(curr_time.microsecond/1000000)))
+                time_difference = timedelta(
+                    hours=cur_time.hour, minutes=cur_time.minute,
+                    seconds=(cur_time.second + (cur_time.microsecond / 1000000))
+                ) - timedelta(
+                    hours=curr_time.hour, minutes=curr_time.minute,
+                    seconds=(curr_time.second + (curr_time.microsecond / 1000000))
+                )
                 remaining_seconds = "{:.2f}".format(time_difference.total_seconds())
                 cap = await get_text(settings, remaining_seconds, files, query, total_results, movie)
                 try:
-                    await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn))
+                    await query.message.edit_text(
+                        text=cap,
+                        reply_markup=InlineKeyboardMarkup(btn)
+                    )
                 except MessageNotModified:
                     pass
             else:
                 try:
-                    await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
+                    await query.edit_message_reply_markup(
+                        reply_markup=InlineKeyboardMarkup(btn)
+                    )
                 except MessageNotModified:
                     pass
                 await query.answer()
         else:
-            # user ko alert
-            await query.answer(
-            f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {search}.",
-            show_alert=True
-        )
-
-        # admin ko request forward
-        try:
-            await bot.send_message(
-                REQ_CHANNEL,
-                f"📝 #REQUESTED_CONTENT 📝\n\n"
-                f"ʙᴏᴛ - {temp.B_NAME}\n"
-                f"ɴᴀᴍᴇ - {query.from_user.mention} (<code>{query.from_user.id}</code>)\n"
-                f"Rᴇǫᴜᴇsᴛ - <code>{search}</code>"
-            )
-        except Exception as e:
-            logger.error(f"failed to send request to REQ_CHANNEL: {e}")
-
             return await query.answer(
                 f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.",
                 show_alert=True
-    )
-            return await query.answer(f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.", show_alert=True)
+            )
+
     except Exception as e:
-            await query.answer(f"error found out\n\n{e}", show_alert=True)
-            return
+        await query.answer(f"error found out\n\n{e}", show_alert=True)
+        return
             
 @Client.on_callback_query(filters.regex(r"^epi2"))
 async def select_episode2(bot, query):
