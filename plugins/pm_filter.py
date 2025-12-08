@@ -913,6 +913,132 @@ async def episode_check(bot, query):
 
         if files:
             settings = await get_settings(query.message.chat.id)
+            key = f"{query.message.chat.id}-{query.message.id}"
+            temp.GETALL[key] = files
+            temp.CHAT[query.from_user.id] = query.message.chat.id
+
+            if not settings["button"]:
+                btn = [[
+                    InlineKeyboardButton(
+                        text=f"[{get_size(file.file_size)}] {file.file_name}",
+                        callback_data=f"files#{file.file_id}",
+                    )
+                ] for file in files]
+
+                btn.insert(0, [
+                    InlineKeyboardButton("Sᴇᴀꜱᴏɴꜱ", callback_data=f"seas#{userid}"),
+                    InlineKeyboardButton("! Sᴇʟᴇᴄᴛ Aɢᴀɪɴ !", callback_data=f"epi#{userid}")
+                ])
+                btn.insert(0, [
+                    InlineKeyboardButton("Lᴀɴɢᴜᴀɢᴇ", callback_data=f"select_lang#{userid}"),
+                    InlineKeyboardButton("Qᴜᴀʟɪᴛʏꜱ", callback_data=f"quality#{userid}")
+                ])
+                btn.insert(0, [
+                    InlineKeyboardButton("! Sᴇɴᴅ Aʟʟ !", callback_data=f"sendfiles#{key}")
+                ])
+            else:
+                btn = []
+                btn.insert(0, [
+                    InlineKeyboardButton("Sᴇᴀꜱᴏɴꜱ", callback_data=f"seas#{userid}"),
+                    InlineKeyboardButton("! Sᴇʟᴇᴄᴛ Aɢᴀɪɴ !", callback_data=f"epi#{userid}")
+                ])
+                btn.insert(0, [
+                    InlineKeyboardButton("Lᴀɴɢᴜᴀɢᴇ", callback_data=f"select_lang#{userid}"),
+                    InlineKeyboardButton("Qᴜᴀʟɪᴛʏꜱ", callback_data=f"quality#{userid}")
+                ])
+                btn.insert(0, [
+                    InlineKeyboardButton("! Sᴇɴᴅ Aʟʟ !", callback_data=f"sendfiles#{key}")
+                ])
+
+            if offset != "":
+                BUTTONS[key] = movie
+                req = userid
+                try:
+                    if settings["max_btn"]:
+                        btn.append([
+                            InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"),
+                            InlineKeyboardButton(
+                                text=f"1/{math.ceil(int(total_results)/10)}",
+                                callback_data="pages"
+                            ),
+                            InlineKeyboardButton(
+                                text="𝐍𝐄𝐗𝐓 ➪",
+                                callback_data=f"next_{req}_{key}_{offset}"
+                            )
+                        ])
+                    else:
+                        btn.append([
+                            InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"),
+                            InlineKeyboardButton(
+                                text=f"1/{math.ceil(int(total_results)/int(MAX_B_TN))}",
+                                callback_data="pages"
+                            ),
+                            InlineKeyboardButton(
+                                text="𝐍𝐄𝐗𝐓 ➪",
+                                callback_data=f"next_{req}_{key}_{offset}"
+                            )
+                        ])
+                except KeyError:
+                    await save_group_settings(query.message.chat.id, "max_btn", True)
+                    btn.append([
+                        InlineKeyboardButton("𝐏𝐀𝐆𝐄", callback_data="pages"),
+                        InlineKeyboardButton(
+                            text=f"1/{math.ceil(int(total_results)/10)}",
+                            callback_data="pages"
+                        ),
+                        InlineKeyboardButton(
+                            text="𝐍𝐄𝐗𝐓 ➪",
+                            callback_data=f"next_{req}_{key}_{offset}"
+                        )
+                    ])
+            else:
+                btn.append([
+                    InlineKeyboardButton(
+                        text="𝐍𝐎 𝐌𝐎𝐑𝐄 𝐏𝐀𝐆𝐄𝐒 𝐀𝐕𝐀𝐈𝐋𝐀𝐁𝐋𝐄",
+                        callback_data="pages"
+                    )
+                ])
+
+            if settings.get("button", SINGLE_BUTTON):
+                cur_time = datetime.now(pytz.timezone("Asia/Kolkata")).time()
+                time_difference = timedelta(
+                    hours=cur_time.hour,
+                    minutes=cur_time.minute,
+                    seconds=cur_time.second + (cur_time.microsecond / 1_000_000),
+                ) - timedelta(
+                    hours=curr_time.hour,
+                    minutes=curr_time.minute,
+                    seconds=curr_time.second + (curr_time.microsecond / 1_000_000),
+                )
+                remaining_seconds = "{:.2f}".format(time_difference.total_seconds())
+                cap = await get_text(
+                    settings, remaining_seconds, files, query, total_results, movie
+                )
+                try:
+                    await query.message.edit_text(
+                        text=cap, reply_markup=InlineKeyboardMarkup(btn)
+                    )
+                except MessageNotModified:
+                    pass
+            else:
+                try:
+                    await query.edit_message_reply_markup(
+                        reply_markup=InlineKeyboardMarkup(btn)
+                    )
+                except MessageNotModified:
+                    pass
+                await query.answer()
+
+        else:
+            movie = temp.KEYWORD.get(query.from_user.id) or "Unknown"
+            return await query.answer(
+                f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.",
+                show_alert=True
+            )
+
+    except Exception as e:
+        await query.answer(f"error found out\n\n{e}", show_alert=True)
+        return
         
             
 @Client.on_callback_query(filters.regex(r"^epi2"))
