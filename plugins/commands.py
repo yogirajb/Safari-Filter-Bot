@@ -215,13 +215,24 @@ async def start(client, message):
 # 🔥 MULTI FORCE SUB SYSTEM
         not_joined = []
 
-        for channel in AUTH_CHANNELS:
-            try:
-                member = await client.get_chat_member(channel, message.from_user.id)
-                if member.status in ["kicked", "left"]:
-                    not_joined.append(channel)
-            except Exception:
+for channel in AUTH_CHANNELS:
+        try:
+            member = await client.get_chat_member(channel, message.from_user.id)
+
+            # ✅ ALLOW ACCESS
+            if member.status in ["member", "administrator", "creator"]:
+                continue
+
+            # ⏳ JOIN REQUEST SENT = ALSO ALLOW
+            if member.status in ["restricted"]:
+                continue
+
+            # ❌ BLOCK ONLY LEFT / KICKED
+            if member.status in ["left", "kicked"]:
                 not_joined.append(channel)
+
+        except Exception:
+            not_joined.append(channel)
 
         # ✅ FORCE SUBSCRIBE BLOCK (FIXED)
         if not_joined:
