@@ -27,7 +27,7 @@ import json
 import base64
 logger = logging.getLogger(__name__)
 
-TIMEZONE = "Asia/KKolkata"
+TIMEZONE = "Asia/Kolkata"
 
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
@@ -212,20 +212,20 @@ async def start(client, message):
         except:
             pre, grp_id, file_id = "", 0, data
 
-    # 🔥 MULTI FORCE SUB SYSTEM
-    not_joined = []
+        # 🔥 MULTI FORCE SUB SYSTEM
+        not_joined = []
 
-    for channel in AUTH_CHANNELS:
-        try:
-            member = await client.get_chat_member(channel, message.from_user.id)
-            if member.status in ["kicked", "left"]:
+        for channel in AUTH_CHANNELS:
+            try:
+                member = await client.get_chat_member(channel, message.from_user.id)
+                if member.status in ["kicked", "left"]:
+                    not_joined.append(channel)
+            except Exception:
                 not_joined.append(channel)
-        except Exception:
-            not_joined.append(channel)
 
 
-    if not_joined:
-        buttons = []
+        if not_joined:
+            buttons = []
 
         for ch in not_joined:
             try:
