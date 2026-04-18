@@ -224,38 +224,39 @@ async def start(client, message):
                 not_joined.append(channel)
 
 
+        # ✅ FIXED PART
         if not_joined:
             buttons = []
 
-        for ch in not_joined:
-            try:
-                invite_link = await client.create_chat_invite_link(
-                    ch, creates_join_request=True
-                )
+            for ch in not_joined:   # ✅ अब सही indentation
+                try:
+                    invite_link = await client.create_chat_invite_link(
+                        ch, creates_join_request=True
+                 )
                 buttons.append([
                     InlineKeyboardButton("⛔️ ᴊᴏɪɴ ɴᴏᴡ ⛔️", url=invite_link.invite_link)
                 ])
-            except Exception:
-                continue
+                except Exception:
+                    continue
 
         if data != "subscribe":
             if data.startswith("allfiles"):
-                buttons.append([InlineKeyboardButton(
-                    "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
-                    url=f"https://t.me/{temp.U_NAME}?start=allfiles_{grp_id}_{file_id}"
-                )])
-            else:
-                buttons.append([InlineKeyboardButton(
-                    "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
-                    url=f"https://t.me/{temp.U_NAME}?start=files_{grp_id}_{file_id}"
-                )])
+               buttons.append([InlineKeyboardButton(
+                "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
+                url=f"https://t.me/{temp.U_NAME}?start=allfiles_{grp_id}_{file_id}"
+            )])
+           else:
+               buttons.append([InlineKeyboardButton(
+                "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
+                url=f"https://t.me/{temp.U_NAME}?start=files_{grp_id}_{file_id}"
+            )])
 
         await client.send_message(
             chat_id=message.from_user.id,
             text=script.FSUB_TXT.format(message.from_user.mention),
             reply_markup=InlineKeyboardMarkup(buttons),
             parse_mode=enums.ParseMode.HTML
-        )
+      )
         return
        
         if not await db.has_premium_access(user_id):
