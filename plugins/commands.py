@@ -207,11 +207,10 @@ async def start(client, message):
         
         data = message.command[1] if len(message.command) > 1 else ""
 
-    try:
-        pre, grp_id, file_id = data.split('_', 2)
-    except:
-        pre, grp_id, file_id = "", 0, data
-
+        try:
+            pre, grp_id, file_id = data.split('_', 2)
+        except:
+            pre, grp_id, file_id = "", 0, data
 
     # 🔥 MULTI FORCE SUB SYSTEM
     not_joined = []
