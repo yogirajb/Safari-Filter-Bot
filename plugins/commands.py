@@ -258,6 +258,7 @@ async def start(client, message):
             parse_mode=enums.ParseMode.HTML
         )
         return
+       
         if not await db.has_premium_access(user_id):
             settings = await get_settings(int(grp_id))
             is_verify = settings["is_verify"]
