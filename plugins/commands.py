@@ -233,26 +233,41 @@ async def start(client, message):
                     parse_mode=enums.ParseMode.HTML
                 )
                 return
-        else:
-            id = settings.get('fsub_id', AUTH_CHANNEL)
-            channel = int(id)
-            if settings.get('fsub_id', AUTH_CHANNEL) and not await is_subscribed(client, message.from_user.id, channel):
-                invite_link = await client.create_chat_invite_link((channel), creates_join_request=True)
-                btn = [[
-                        InlineKeyboardButton("⛔️ ᴊᴏɪɴ ɴᴏᴡ ⛔️", url=invite_link.invite_link)
-                      ]]
-                if message.command[1] != "subscribe":
-                    if data.startswith("allfiles"):
-                        btn.append([InlineKeyboardButton("♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️", url=f"https://t.me/{temp.U_NAME}?start=allfiles_{grp_id}_{file_id}")])
-                    else:
-                        btn.append([InlineKeyboardButton("♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️", url=f"https://t.me/{temp.U_NAME}?start=files_{grp_id}_{file_id}")])
-                await client.send_message(
-                    chat_id=message.from_user.id,
-                    text=script.FSUB_TXT.format(message.from_user.mention),
-                    reply_markup=InlineKeyboardMarkup(btn),
-                    parse_mode=enums.ParseMode.HTML
-                )
-                return
+        # 🔥 MULTI FORCE SUB SYSTEM
+        not_joined = []
+
+        for channel in AUTH_CHANNELS:
+            try:
+               member = await client.get_chat_member(channel, message.from_user.id)
+               if member.status in ["kicked", "left"]:
+                   not_joined.append(channel)
+        except:
+              not_joined.append(channel)
+
+       if not_joined:
+                  buttons = []
+
+    for ch in not_joined:
+        try:
+            invite_link = await client.create_chat_invite_link(ch, creates_join_request=True)
+            buttons.append([InlineKeyboardButton("⛔️ ᴊᴏɪɴ ɴᴏᴡ ⛔️", url=invite_link.invite_link)])
+        except:
+            continue
+
+        # try again button
+        if message.command[1] != "subscribe":
+              if data.startswith("allfiles"):
+                    buttons.append([InlineKeyboardButton("♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️", url=f"https://t.me/{temp.U_NAME}?start=allfiles_{grp_id}_{file_id}")])
+              else:
+                  buttons.append([InlineKeyboardButton("♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️", url=f"https://t.me/{temp.U_NAME}?start=files_{grp_id}_{file_id}")])
+
+        await client.send_message(
+            chat_id=message.from_user.id,
+            text=script.FSUB_TXT.format(message.from_user.mention),
+            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=enums.ParseMode.HTML
+        )
+        return
         if not await db.has_premium_access(user_id):
             settings = await get_settings(int(grp_id))
             is_verify = settings["is_verify"]
