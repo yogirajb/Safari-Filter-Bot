@@ -205,7 +205,59 @@ async def start(client, message):
                 await dlt.delete()
                 return
         
-        dd
+        data = message.command[1] if len(message.command) > 1 else ""
+
+    try:
+        pre, grp_id, file_id = data.split('_', 2)
+    except:
+        pre, grp_id, file_id = "", 0, data
+
+
+    # 🔥 MULTI FORCE SUB SYSTEM
+    not_joined = []
+
+    for channel in AUTH_CHANNELS:
+        try:
+            member = await client.get_chat_member(channel, message.from_user.id)
+            if member.status in ["kicked", "left"]:
+                not_joined.append(channel)
+        except Exception:
+            not_joined.append(channel)
+
+
+    if not_joined:
+        buttons = []
+
+        for ch in not_joined:
+            try:
+                invite_link = await client.create_chat_invite_link(
+                    ch, creates_join_request=True
+                )
+                buttons.append([
+                    InlineKeyboardButton("⛔️ ᴊᴏɪɴ ɴᴏᴡ ⛔️", url=invite_link.invite_link)
+                ])
+            except Exception:
+                continue
+
+        if data != "subscribe":
+            if data.startswith("allfiles"):
+                buttons.append([InlineKeyboardButton(
+                    "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
+                    url=f"https://t.me/{temp.U_NAME}?start=allfiles_{grp_id}_{file_id}"
+                )])
+            else:
+                buttons.append([InlineKeyboardButton(
+                    "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
+                    url=f"https://t.me/{temp.U_NAME}?start=files_{grp_id}_{file_id}"
+                )])
+
+        await client.send_message(
+            chat_id=message.from_user.id,
+            text=script.FSUB_TXT.format(message.from_user.mention),
+            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=enums.ParseMode.HTML
+        )
+        return
         if not await db.has_premium_access(user_id):
             settings = await get_settings(int(grp_id))
             is_verify = settings["is_verify"]
