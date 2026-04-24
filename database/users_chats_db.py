@@ -381,7 +381,7 @@ class Database:
 
     async def get_expired(self, current_time):
         expired_users = []
-        if data := self.users.find({"expiry_time": {"$lt": current_time}}):
+        if data := self.users.find({"expiry_time": {"$lt": current_time, "$ne": None}}):
             async for user in data:
                 expired_users.append(user)
         return expired_users
