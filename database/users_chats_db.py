@@ -387,7 +387,7 @@ class Database:
         return expired_users
 
     async def remove_premium_access(self, user_id):
-        return await self.update_one(
+        return await self.users.update_many(
             {"id": user_id}, {"$set": {"expiry_time": None}}
         )
 
