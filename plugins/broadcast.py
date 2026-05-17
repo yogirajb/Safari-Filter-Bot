@@ -1,5 +1,4 @@
 # This code has been modified by @Safaridev
-# Optimized by ChatGPT for Koyeb Free Tier
 # Please do not remove credits
 
 from pyrogram import Client, filters
