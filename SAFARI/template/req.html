@@ -1,0 +1,413 @@
+from aiohttp import web
+import re
+import math
+import logging
+import secrets
+import time
+import mimetypes
+from aiohttp.http_exceptions import BadStatusLine
+from SAFARI.utils import multi_clients, work_loads, SafariBot
+from SAFARI.utils.exceptions import FIleNotFound, InvalidHash
+from SAFARI import StartTime, __version__
+from SAFARI.utils.custom_dl import ByteStreamer
+from SAFARI.utils.time_format import get_readable_time
+from SAFARI.utils.render_template import render_page
+from info import *
+
+routes = web.RouteTableDef()
+
+home_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safaribotts</title>
+    <style>
+        .chatbot-title {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+
+        .chatbot-image {
+            display: block;
+            margin: 0 auto;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <img src="https://graph.org/file/a97d39a6aa4a1317d430b.jpg" alt="Chatbot Image" class="chatbot-image">
+
+    <h1 class="chatbot-title">Safaribotts</h1>
+</body>
+</html>
+"""
+
+@routes.get("/", allow_head=True)
+async def root_route_handler(request):
+    return web.Response(text=home_template, content_type='text/html')
+
+
+@routes.get(r"/watch/{path:\S+}", allow_head=True)
+async def stream_handler(request: web.Request):
+    try:
+        path = request.match_info["path"]
+        
+        # Safe Splitting Method: Path ko '/' se tod kar numeric ID nikalna
+        clean_path = path.split('/')[0]
+        id = int(clean_path)
+        
+        secure_hash = request.rel_url.query.get("hash")
+        return web.Response(text=await render_page(id, secure_hash), content_type='text/html')
+    except InvalidHash as e:
+        raise web.HTTPForbidden(text=e.message)
+    except FIleNotFound as e:
+        raise web.HTTPNotFound(text=e.message)
+    except (AttributeError, BadStatusLine, ConnectionResetError):
+        pass
+    except Exception as e:
+        logging.critical(e.with_traceback(None))
+        raise web.HTTPInternalServerError(text=str(e))
+
+@routes.get(r"/{path:\S+}", allow_head=True)
+async def download_handler(request: web.Request):
+    try:
+        path = request.match_info["path"]
+        
+        # Download ke liye bhi string split logic taaki naye links par error na aaye
+        clean_path = path.split('/')[0]
+        id = int(clean_path)
+        
+        secure_hash = request.rel_url.query.get("hash")
+        return await media_streamer(request, id, secure_hash)
+    except InvalidHash as e:
+        raise web.HTTPForbidden(text=e.message)
+    except FIleNotFound as e:
+        raise web.HTTPNotFound(text=e.message)
+    except (AttributeError, BadStatusLine, ConnectionResetError):
+        pass
+    except Exception as e:
+        logging.critical(e.with_traceback(None))
+        raise web.HTTPInternalServerError(text=str(e))
+
+class_cache = {}
+
+async def media_streamer(request: web.Request, id: int, secure_hash: str):
+    range_header = request.headers.get("Range", 0)
+    
+    index = min(work_loads, key=work_loads.get)
+    faster_client = multi_clients[index]
+    
+    if MULTI_CLIENT:
+        logging.info(f"Client {index} is now serving {request.remote}")
+
+    if faster_client in class_cache:
+        tg_connect = class_cache[faster_client]
+        logging.debug(f"Using cached ByteStreamer object for client {index}")
+    else:
+        logging.debug(f"Creating new ByteStreamer object for client {index}")
+        tg_connect = ByteStreamer(faster_client)
+        class_cache[faster_client] = tg_connect
+    logging.debug("before calling get_file_properties")
+    file_id = await tg_connect.get_file_properties(id)
+    logging.debug("after calling get_file_properties")
+    
+    if file_id.unique_id[:6] != secure_hash:
+        logging.debug(f"Invalid hash for message with ID {id}")
+        raise InvalidHash
+    
+    file_size = file_id.file_size
+
+    if range_header:
+        from_bytes, until_bytes = range_header.replace("bytes=", "").split("-")
+        from_bytes = int(from_bytes)
+        until_bytes = int(until_bytes) if until_bytes else file_size - 1
+    else:
+        from_bytes = request.http_range.start or 0
+        until_bytes = (request.http_range.stop or file_size) - 1
+
+    if (until_bytes > file_size) or (from_bytes < 0) or (until_bytes < from_bytes):
+        return web.Response(
+            status=416,
+            body="416: Range not satisfiable",
+            headers={"Content-Range": f"bytes */{file_size}"},
+        )
+
+    chunk_size = 1024 * 1024
+    until_bytes = min(until_bytes, file_size - 1)
+
+    offset = from_bytes - (from_bytes % chunk_size)
+    first_part_cut = from_bytes - offset
+    last_part_cut = until_bytes % chunk_size + 1
+
+    req_length = until_bytes - from_bytes + 1
+    part_count = math.ceil(until_bytes / chunk_size) - math.floor(offset / chunk_size)
+    body = tg_connect.yield_file(
+        file_id, index, offset, first_part_cut, last_part_cut, part_count, chunk_size
+    )
+
+    mime_type = file_id.mime_type
+    file_name = file_id.file_name
+    disposition = "attachment"
+
+    if mime_type:
+        if not file_name:
+            try:
+                file_name = f"{secrets.token_hex(2)}.{mime_type.split('/')[1]}"
+            except (IndexError, AttributeError):
+                file_name = f"{secrets.token_hex(2)}.unknown"
+    else:
+        if file_name:
+            mime_type = mimetypes.guess_type(file_id.file_name)
+        else:
+            mime_type = "application/octet-stream"
+            file_name = f"{secrets.token_hex(2)}.unknown"
+
+    return web.Response(
+        status=206 if range_header else 200,
+        body=body,
+        headers={
+            "Content-Type": f"{mime_type}",
+            "Content-Range": f"bytes {from_bytes}-{until_bytes}/{file_size}",
+            "Content-Length": str(req_length),
+            "Content-Disposition": f'{disposition}; filename="{file_name}"',
+            "Accept-Ranges": "bytes",
+        },
+    )
+
+# HTML UI Template rendering function inside route.py
+async def render_page(id, secure_hash, file_name, file_size):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{file_name}}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <style>
+            :root {{
+                --bg-dark: #090d16;
+                --card-dark: #131a26;
+            }}
+
+            body {{
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                background-color: var(--bg-dark);
+                color: #f1f5f9;
+                overflow-x: hidden;
+            }}
+
+            .glow-bg {{
+                position: absolute;
+                width: 400px;
+                height: 400px;
+                border-radius: 50%;
+                background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
+                z-index: -1;
+                filter: blur(50px);
+            }}
+
+            nav {{
+                background: rgba(15, 23, 42, 0.6);
+                backdrop-filter: blur(12px);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+            }}
+
+            .video-container {{
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(168, 85, 247, 0.05);
+                border-radius: 20px;
+                overflow: hidden;
+                background: #000;
+            }}
+
+            .player-btn {{
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 14px 20px;
+                background: #1a2333;
+                border: 1px solid rgba(255, 255, 255, 0.03);
+                border-radius: 14px;
+                font-weight: 600;
+                font-size: 14px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                color: #e2e8f0;
+                width: 100%;
+            }}
+
+            .player-btn:hover {{
+                transform: translateY(-2px);
+                background: #243047;
+                border-color: rgba(168, 85, 247, 0.3);
+                color: #fff;
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), 0 0 12px rgba(168, 85, 247, 0.1);
+            }}
+
+            .chnl-btn {{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #cbd5e1;
+                transition: all 0.2s ease;
+            }}
+
+            .chnl-btn:hover {{
+                background: rgba(168, 85, 247, 0.15);
+                border-color: rgba(168, 85, 247, 0.4);
+                color: #fff;
+                transform: scale(1.02);
+            }}
+
+            .player-btn img {{
+                width: 24px;
+                height: 24px;
+                object-fit: contain;
+                border-radius: 6px;
+            }}
+
+            .btn-download-primary {{
+                background: linear-gradient(135deg, #a855f7 0%, #da22ff 100%);
+                color: #fff;
+                border: none;
+            }}
+
+            .btn-download-primary:hover {{
+                background: linear-gradient(135deg, #c084fc 0%, #e066ff 100%);
+                box-shadow: 0 10px 25px rgba(218, 34, 255, 0.35);
+            }}
+
+            .glass-card {{
+                background: #111827;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 24px;
+            }}
+        </style>
+    </head>
+
+    <body class="relative min-h-screen pb-12">
+        <div class="glow-bg top-12 left-[-100px]"></div>
+        <div class="glow-bg bottom-36 right-[-100px]"></div>
+
+        <nav class="w-full py-4 px-6 md:px-12 flex justify-between items-center">
+            <a href="https://t.me/MzBotz" class="flex items-center gap-2">
+                <span class="text-2xl font-extrabold tracking-wider bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">𝗠𝘇𝗕𝗼𝘁𝘇</span>
+            </a>
+            <div class="flex gap-6 font-medium text-sm text-gray-400">
+                <a href="#main" class="hover:text-purple-400 transition-colors">HOME</a>
+                <a href="#sec4" class="hover:text-purple-400 transition-colors">ABOUT</a>
+            </div>
+        </nav>
+
+        <main class="max-w-4xl mx-auto px-4 mt-8" id="main">
+            <div class="glass-card p-4 md:p-8 shadow-2xl">
+                <div class="video-container aspect-video mb-6">
+                    <video id="player" class="w-full h-full" src="/{{id}}?hash={{secure_hash}}" type="video/mp4" playsinline controls></video>
+                </div>
+
+                <div class="mb-8 border-b border-gray-800 pb-5">
+                    <h1 class="text-lg md:text-xl font-bold text-gray-100 leading-snug mb-2 break-all"><i class="fa-solid fa-file-video text-purple-500 mr-2"></i>{{file_name}}</h1>
+                    <div class="flex flex-wrap gap-4 text-xs text-gray-400 font-medium">
+                        <span class="bg-gray-800 px-3 py-1 rounded-full"><i class="fa-solid fa-server mr-1"></i> High Speed Stream</span>
+                        <span class="bg-gray-800 px-3 py-1 rounded-full"><i class="fa-solid fa-shield-halved mr-1"></i> Secure Link</span>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-semibold text-gray-400 mb-4 uppercase tracking-wider">Choose Player / Option</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button class="player-btn" onclick="playInVLC()">
+                        <img src="https://i.postimg.cc/15TQ4y7B/vlc.png" alt="VLC"> Watch in VLC Player
+                    </button>
+                    <button class="player-btn" onclick="playInMX()">
+                        <img src="https://i.postimg.cc/sx4Msv4T/mx.png" alt="MX"> Watch in MX Player
+                    </button>
+                    <button class="player-btn" onclick="playInPlayIt()">
+                        <img src="https://i.postimg.cc/VNCwVGjz/IMG-20240408-140543.jpg" alt="PlayIt"> Watch in PLAYit Player
+                    </button>
+                    <button class="player-btn btn-download-primary justify-center text-center mt-2 sm:mt-0" onclick="downloadVideo()">
+                        <i class="fa-solid fa-circle-down text-lg"></i> Direct Fast Download
+                    </button>
+                </div>
+            </div>
+
+            <section class="glass-card mt-8 p-6 md:p-10 text-center" id="sec4">
+                <h2 class="text-xl font-bold text-white mb-2">Welcome to Our Streaming Page</h2>
+                <p class="text-gray-400 text-sm leading-relaxed max-w-2xl mx-auto mb-8">
+                    Get ready for an amazing experience filled with entertainment. Grab your snacks, sit back, and enjoy the show!
+                </p>
+
+                <h3 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4"><i class="fa-solid fa-layer-group mr-1"></i> Our Network Channels</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-3xl mx-auto mb-8">
+                    <a class="chnl-btn" href="https://t.me/MzMoviiez" target="_blank"><i class="fa-solid fa-film mr-2 text-purple-400"></i>BACKUP - MAIN</a>
+                    <a class="chnl-btn" href="https://t.me/Mzmoviiezrequest" target="_blank"><i class="fa-solid fa-users mr-2 text-pink-400"></i>MZ GROUP</a>
+                    <a class="chnl-btn" href="https://t.me/marathimoviiezz" target="_blank"><i class="fa-solid fa-clapperboard mr-2 text-purple-400"></i>MARATHI MOVIES</a>
+                    <a class="chnl-btn" href="https://t.me/visionloverz" target="_blank"><i class="fa-solid fa-video mr-2 text-pink-400"></i>BACKUP MOVIES</a>
+                    <a class="chnl-btn" href="https://t.me/oldmovieloverz" target="_blank"><i class="fa-solid fa-folder-open mr-2 text-purple-400"></i>OLD FILES</a>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-4 border-t border-gray-800 pt-6">
+                    <p class="text-xs text-gray-500">Need support or want to report an issue?</p>
+                    <a href="https://t.me/MzBotz" class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition-all">
+                        <i class="fa-brands fa-telegram text-purple-400 text-base"></i> Contact Official Support
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <footer class="max-w-4xl mx-auto px-4 mt-8 text-center text-xs text-gray-500">
+            <p class="mb-4 leading-relaxed">
+                Disclaimer: Links generated dynamically through automation networks. Users remain responsible for parsing compliance terms.
+            </p>
+            <div class="flex justify-center gap-4 text-gray-400 border-t border-gray-900 pt-4">
+                <span>Copyright © 2026 <a href="https://t.me/MzBotz" class="font-bold hover:text-purple-400">𝗠𝘇𝗕𝗼𝘁𝘇</a></span>
+            </div>
+        </footer>
+
+        <script>
+            const rawStreamUrl = window.location.origin + "/{{id}}?hash={{secure_hash}}"; 
+            const rawFileName = "{{file_name}}";
+
+            function playInVLC() {{
+                window.location.href = "vlc://" + rawStreamUrl;
+            }}
+
+            function playInMX() {{
+                window.location.href = "intent://" + rawStreamUrl.replace(/^https?:\/\//, "") + "#Intent;package=com.mxtech.videoplayer.ad;S.title=" + encodeURIComponent(rawFileName) + ";end";
+            }}
+
+            function playInPlayIt() {{
+                window.location.href = "playit://playurl?url=" + encodeURIComponent(rawStreamUrl) + "&title=" + encodeURIComponent(rawFileName);
+            }}
+
+            function downloadVideo() {{
+                const a = document.createElement('a');
+                a.href = rawStreamUrl;
+                a.download = rawFileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }}
+        </script>
+    </body>
+    </html>
+    """
+    return html_content
+      
