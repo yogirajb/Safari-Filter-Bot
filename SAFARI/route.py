@@ -97,7 +97,10 @@ async def stream_handler(request: web.Request):
 async def download_handler(request: web.Request):
     try:
         path = request.match_info["path"]
-        
+         # Favicon request ko bypass karein taaki code crash na ho
+        if "favicon.ico" in path:
+            return web.Response(status=200)
+            
         # Download ke liye bhi string split logic taaki naye links par error na aaye
         clean_path = path.split('/')[0]
         id = int(clean_path)
