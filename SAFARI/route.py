@@ -80,7 +80,7 @@ async def stream_handler(request: web.Request):
         
         # render_page ko req.html render karne ke liye correct parameters bhej diye hain
         return web.Response(
-            text=await render_page(id, secure_hash, file_name, file_url), 
+            text=await render_page(id, secure_hash, file_name), 
             content_type='text/html'
         )
     except InvalidHash as e:
