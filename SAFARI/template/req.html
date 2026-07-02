@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{file_name}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --card-dark: #111827;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            background: rgba(15, 23, 42, 0.8) !important;
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .premium-logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #a855f7 0%, #da22ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container-wrapper {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .main-card {
+            background: var(--card-dark);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .file-name-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(168, 85, 247, 0.3);
+            border-radius: 14px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            word-break: break-all;
+            font-weight: 600;
+        }
+
+        .downloadBtn-grid {
+            display: grid;
+            grid-template-cols: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .downloadBtn-grid button {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 15px;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .downloadBtn-grid button:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(168, 85, 247, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .downloadBtn-grid button img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        .btn-download-main-action {
+            background: linear-gradient(135deg, #a855f7 0%, #da22ff 100%) !important;
+            color: #fff !important;
+            justify-content: center !important;
+            font-weight: 700 !important;
+            border: none !important;
+        }
+
+        .btn-download-main-action:hover {
+            box-shadow: 0 10px 25px rgba(218, 34, 255, 0.4);
+        }
+
+        /* PREMIUM DYNAMIC MODAL BOX (FOR ABOUT SECTION) */
+        .about-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(4, 7, 13, 0.85);
+            backdrop-filter: blur(16px);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .about-modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            max-width: 650px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+
+        .about-modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .close-modal-btn {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 24px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-modal-btn:hover {
+            color: #f43f5e;
+        }
+
+        .modal-sec-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #a855f7;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grid-links {
+            display: grid;
+            grid-template-cols: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+        }
+
+        .network-btn {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .network-btn:hover {
+            background: rgba(168, 85, 247, 0.12);
+            border-color: rgba(168, 85, 247, 0.4);
+            color: #fff;
+            transform: translateX(3px);
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div>
+            <a href="https://t.me/MzBotz">
+                <h3 class="premium-logo"><b>𝗠𝘇𝗕𝗼𝘁𝘇</b></h3>
+            </a>
+        </div>
+        <div class="flex gap-5 font-semibold text-sm text-gray-400">
+            <a href="#main" class="hover:text-purple-400 transition-colors">HOME</a>
+            <button onclick="openAboutModal()" class="hover:text-purple-400 transition-colors focus:outline-none">ABOUT</button>
+        </div>
+    </nav>
+
+    <div class="container-wrapper">
+        <div class="main-card" id="main">
+            <div class="rounded-xl overflow-hidden bg-black aspect-video mb-4 shadow-inner">
+                <video id="player" src="{{file_url}}" type="video/mp4" playsinline controls class="w-full h-full"></video>
+            </div>
+            
+            <div class="file-name-box">
+                <p id="myDiv" class="text-sm md:text-base text-gray-200"><i class="fa-solid fa-file-video text-purple-400 mr-2"></i>{{file_name}}</p> 
+            </div>
+
+            <div class="downloadBtn-grid">
+                <button onclick="vlc_player()"><img src="https://i.postimg.cc/15TQ4y7B/vlc.png" alt="">Watch in VLC Player</button>
+                <button onclick="mx_player()"><img src="https://i.postimg.cc/sx4Msv4T/mx.png" alt="">Watch in MX Player</button>
+                <button onclick="playit_player()"><img src="https://i.postimg.cc/VNCwVGjz/IMG-20240408-140543.jpg" alt="">Watch in PLAYit Player</button>
+                <button onclick="km_player()"><img src="https://i.postimg.cc/wT9tFQ9Z/km.png" alt="">Watch in KM Player</button>
+                <button onclick="s_player()"><img src="https://i.postimg.cc/XYJr6NGg/s.png" alt="">Watch in S Player</button>
+                <button onclick="hd_player()"><img src="https://i.postimg.cc/rFT43LNh/hd.png" alt="">Watch in HD Player (4K)</button>
+                <button class="btn-download-main-action" onclick="bisalDownload()"><img src="https://i.postimg.cc/Zncc9YLq/Pngtree-download-icon-3581467.png" alt="">Download Video</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="aboutModal" class="about-modal" onclick="closeAboutModalOutside(event)">
+        <div class="modal-content">
+            <span class="close-modal-btn" onclick="closeAboutModal()">&times;</span>
+            
+            <h2 class="text-xl font-bold text-white border-b border-gray-800 pb-3 mb-4">About MzBotz Networks</h2>
+            <p class="text-gray-400 text-xs md:text-sm leading-relaxed mb-4">
+                Welcome to our cloud-mesh delivery page! Your node file parameters are generated natively using system automation. Enjoy safe and ultra-speed operations.
+            </p>
+
+            <div class="modal-sec-title"><i class="fa-solid fa-layer-group"></i> Our Channels</div>
+            <div class="grid-links mb-4">
+                <a class="network-btn" href="https://t.me/MzMoviiez" target="_blank"><i class="fa-solid fa-film text-purple-400"></i> BACKUP - MAIN</a>
+                <a class="network-btn" href="https://t.me/Mzmoviiezrequest" target="_blank"><i class="fa-solid fa-users text-pink-400"></i> MZ GROUP</a>
+                <a class="network-btn" href="https://t.me/marathimoviiezz" target="_blank"><i class="fa-solid fa-clapperboard text-purple-400"></i> MARATHI MOVIES</a>
+                <a class="network-btn" href="https://t.me/visionloverz" target="_blank"><i class="fa-solid fa-video text-pink-400"></i> BACKUP MOVIES</a>
+                <a class="network-btn" href="https://t.me/oldmovieloverz" target="_blank"><i class="fa-solid fa-folder-open text-purple-400"></i> OLD FILES</a>
+            </div>
+
+            <div class="modal-sec-title"><i class="fa-solid fa-robot"></i> Our Official Bots</div>
+            <div class="grid-links mb-6">
+                <a class="network-btn" href="https://t.me/Mzautofilterrobot" target="_blank"><i class="fa-solid fa-magnifying-glass text-purple-400"></i> MOVIE SEARCH BOT</a>
+                <a class="network-btn" href="https://t.me/Mzautofilter_bot" target="_blank"><i class="fa-solid fa-magnifying-glass text-pink-400"></i> MOVIE SEARCH BOT 2</a>
+                <a class="network-btn" href="https://t.me/mzfilestorage_bot" target="_blank"><i class="fa-solid fa-box-archive text-purple-400"></i> FILE STORAGE BOT</a>
+                <a class="network-btn" href="https://t.me/MzBotz" target="_blank"><i class="fa-solid fa-bullhorn text-pink-400"></i> BOT UPDATE CHANNEL</a>
+            </div>
+
+            <div class="border-t border-gray-800 pt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <span class="text-[11px] text-gray-500">Need support? Connect with us anytime.</span>
+                <a class="btn-download-main-action text-xs px-5 py-2.5 rounded-xl flex items-center gap-2" href="https://t.me/MzBotz" target="_blank">
+                    <i class="fa-brands fa-telegram text-base"></i> CONTACT SUPPORT
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full bg-[#0d131f] border-t border-gray-900 mt-20 py-6 px-4">
+        <div class="text-center">
+            <h5 class="text-xs text-gray-500">Copyright © 2026 <a href="https://t.me/MzBotz"><span class="font-bold text-purple-500">𝗠𝘇𝗕𝗼𝘁𝘇</span></a>. All Rights Reserved.</h5>
+        </div>
+    </footer>
+</body>
+
+<!-- Injecting safari bot script asset for intent routing -->
+<script src="https://biisal.github.io/Resources/StreamJs.js"></script>
+<script>
+    // System placeholders tracking
+    const rawStreamUrl = "{{file_url}}";
+    const rawFileName = "{{file_name}}";
+
+    // Dynamic Modal Handlers Logic
+    function openAboutModal() {
+        document.getElementById("aboutModal").classList.add("active");
+    }
+
+    // Modal helpers
+    function closeAboutModal() {
+        document.getElementById("aboutModal").classList.remove("active");
+    }
+
+    function closeAboutModalOutside(event) {
+        if (event.target.id === "aboutModal") {
+            closeAboutModal();
+        }
+    }
+    
+    // Dynamic Fallback validation override
+    window.addEventListener('DOMContentLoaded', () => {
+        let streamUrl = rawStreamUrl;
+        if (!streamUrl || streamUrl.trim() === "" || streamUrl.includes("file_url")) {
+            streamUrl = window.location.href.replace("/watch/", "/");
+        }
+        // Force rewrite local memory mappings if dynamic injection delays
+        if (typeof log !== 'undefined') {
+            console.log("Routing assets assigned properly via external mesh script.");
+        }
+    });
+</script>
+          </html>
+          
