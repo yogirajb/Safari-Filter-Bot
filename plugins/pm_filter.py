@@ -1684,7 +1684,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             await client.edit_message_media(
                 query.message.chat.id, 
                 query.message.id, 
-                InputMediaPhoto(REFFER_PIC)
+                InputMediaPhoto(REFFER_PIC, has_spoiler=True)
             )
             await query.message.edit_text(
                 text=script.REFFER_TXT.format(temp.U_NAME, user_id),
