@@ -84,7 +84,7 @@ async def getfile(client, message):
             f"<b>🌐 Language: {language}</b>\n\n"
             f"📕 Story: {hindi_plot}\n\n"
             f"🔗 <a href='{custom_link}'>Click Here Get Files</a>\n\n"
-            f"⚡️ <b>Powered By : </b><a href='https://t.me/MzMoviiez'>MzMoviiez</a>"
+            f"⚡️ <b>Powered By : </b><a href='https://t.me/MzMoviiez'><b>MzMoviiez</b></a>"
         )
         
         reply_markup = InlineKeyboardMarkup([
@@ -149,7 +149,7 @@ async def post_to_channels(client, callback_query):
             f"<b>🌐 Language: {language}</b>\n\n"
             f"📕 Story: {hindi_plot}\n\n"
             f"🔗 <a href='{custom_link}'>Click Here Get Files</a>\n\n"
-            f"⚡️ <b>Powered By : </b><a href='https://t.me/MzMoviiez'>MzMoviiez</a>"
+            f"⚡️ <b>Powered By : </b><a href='https://t.me/MzMoviiez'><b>MzMoviiez</b></a>"
         )
         
         for channel_id in POST_CHANNELS:
