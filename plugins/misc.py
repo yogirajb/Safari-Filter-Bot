@@ -282,7 +282,8 @@ async def imdb_callback(bot: Client, query: CallbackQuery):
             await message.reply_photo(
                 photo=imdb["poster"],
                 caption=caption,
-                reply_markup=InlineKeyboardMarkup(btn),
+                reply_markup=InlineKeyboardMarkup(btn), 
+                has_spoiler=True
             )
         except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty):
             pic = imdb.get("poster")
@@ -290,7 +291,8 @@ async def imdb_callback(bot: Client, query: CallbackQuery):
             await message.reply_photo(
                 photo=poster,
                 caption=caption,
-                reply_markup=InlineKeyboardMarkup(btn),
+                reply_markup=InlineKeyboardMarkup(btn), 
+                has_spoiler=True
             )
         except Exception as e:
             logger.exception(e)
