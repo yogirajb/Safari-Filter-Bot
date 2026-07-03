@@ -83,7 +83,7 @@ async def getfile(client, message):
             f"<b>🌐 Language: {language}</b>\n\n"
             f"📕 Story: {hindi_plot}\n\n"
             f"🔗 <a href='{custom_link}'><b>Click Here To Get Files</b></a>\n\n"
-            f"⚡️ <b>Powered By : </b><a href='https://t.me/MzMoviiez'><b>MzMoviiez</b></a>"
+            f"⚡️ <b>Powered By : </b><a href='https://t.me/MzMoviiez'><b>𝗠𝘇𝗠𝗼𝘃𝗶𝗶𝗲𝘇</b></a>"
         )
         
         reply_markup = InlineKeyboardMarkup([
@@ -114,7 +114,7 @@ async def getfile(client, message):
 
 @Client.on_callback_query(filters.regex(r'^post_(yes|no)_'))
 async def post_to_channels(client, callback_query):
-    action, file_name = callback_query.data.split('_')[1], callback_query.data.split('_')[2]
+     _, action, file_name = callback_query.data.split('_', 2)
     
     if action == "yes":
         movie_details = await get_poster(file_name)
@@ -148,7 +148,7 @@ async def post_to_channels(client, callback_query):
             f"<b>🌐 Language: {language}</b>\n\n"
             f"📕 Story: {hindi_plot}\n\n"
             f"🔗 <a href='{custom_link}'><b>Click Here To Get Files</b></a>\n\n"
-            f"⚡️ <b>Powered By : </b><a href='https://t.me/MzMoviiez'><b>MzMoviiez</b></a>"
+            f"⚡️ <b>Powered By : </b><a href='https://t.me/MzMoviiez'><b>𝗠𝘇𝗠𝗼𝘃𝗶𝗶𝗲𝘇</b></a>"
         )
         
         for channel_id in POST_CHANNELS:
