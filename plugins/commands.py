@@ -365,7 +365,8 @@ async def start(client, message):
                     file_id=file_id,
                     caption=f_caption,
                     protect_content=True if pre == 'filep' else False,
-                    reply_markup=reply_markup
+                    reply_markup=reply_markup, 
+                    has_spoiler=True
                 )
                 filesarr.append(msg)
             if await db.get_setting("AUTO_FILE_DELETE", default=AUTO_FILE_DELETE):
@@ -400,7 +401,8 @@ async def start(client, message):
                     chat_id=message.from_user.id,
                     file_id=file_id,
                     protect_content=True if pre == 'filep' else False,
-                    reply_markup=reply_markup
+                    reply_markup=reply_markup, 
+                    has_spoiler=True
                 )
                 filetype = msg.media
                 file = getattr(msg, filetype.value)
