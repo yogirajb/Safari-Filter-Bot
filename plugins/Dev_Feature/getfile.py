@@ -83,7 +83,7 @@ async def getfile(client, message):
             f"<b>📆 Year: {year}</b>\n"
             f"<b>🌐 Language: {language}</b>\n\n"
             f"📕 Story: {hindi_plot}\n\n"
-            f"🔗 <a href='{custom_link}'>Click Here To Get Files 📁</a>\n\n\n"
+            f"🔗 <a href='{custom_link}'>Click Here To Get Files 📁</a>\n\n"
             f"⚡️ Powered By :<a href='{https://t.me/MzMoviiez}'>MzMoviiez</a>"
         )
         
@@ -148,7 +148,7 @@ async def post_to_channels(client, callback_query):
             f"<b>📆 Year: {year}</b>\n"
             f"<b>🌐 Language: {language}</b>\n\n"
             f"📕 Story: {hindi_plot}\n\n"
-            f"🔗 <a href='{custom_link}'>Click Here To Get Files 📁</a>\n\n\n"
+            f"🔗 <a href='{custom_link}'>Click Here To Get Files 📁</a>\n\n"
             f"⚡️ Powered By :<a href='{custom_link}'>MzMoviiez</a>"
         )
         
