@@ -61,10 +61,10 @@ DATABASE_NAME = environ.get('DATABASE_NAME', "mzbotz")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'mzmoviiez')
 
 #stream link shortner
-STREAM_SITE = (environ.get('STREAM_SITE', 'MdiskShortner.link'))
-STREAM_API = (environ.get('STREAM_API', 'cd6c1f59b3bb44988c8b4450ccd80e50fc9ef5b0'))
-STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me/how_to_open_mdiskshortner/4'))
-STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "False")), False)
+STREAM_SITE = (environ.get('STREAM_SITE', ''))
+STREAM_API = (environ.get('STREAM_API', ''))
+STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me/MzBotz'))
+STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "True")), False)
 
 
 #verify site api and url
