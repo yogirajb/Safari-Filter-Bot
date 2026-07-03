@@ -47,7 +47,6 @@ async def getfile(client, message):
         ])
         
         if poster:
-            has_spoiler=True
             await message.reply_photo(
                 poster,
                 caption=(
@@ -58,7 +57,8 @@ async def getfile(client, message):
                     f"📕 Story: {hindi_plot}"
                 ),
                 reply_markup=safari_markup,
-                parse_mode=enums.ParseMode.HTML,
+                parse_mode=enums.ParseMode.HTML, 
+                has_spoiler=True
             )
             await message.reply_text("Do you want to post this content on POST_CAHNNELS ?",
                 reply_markup=reply_markup)
@@ -104,7 +104,6 @@ async def post_to_channels(client, callback_query):
         for channel_id in POST_CHANNELS:
             try:
                 if poster:
-                    has_spoiler=True
                     await client.send_photo(
                         chat_id=channel_id,
                         photo=poster,
@@ -116,7 +115,8 @@ async def post_to_channels(client, callback_query):
                             f"📕 Story: {hindi_plot}"
                         ),
                         reply_markup=reply_markup,
-                        parse_mode=enums.ParseMode.HTML
+                        parse_mode=enums.ParseMode.HTML, 
+                        has_spoiler=True
                     )
                 else:
                     await client.send_message(
