@@ -47,6 +47,7 @@ async def getfile(client, message):
         ])
         
         if poster:
+            has_spoiler=True
             await message.reply_photo(
                 poster,
                 caption=(
@@ -103,6 +104,7 @@ async def post_to_channels(client, callback_query):
         for channel_id in POST_CHANNELS:
             try:
                 if poster:
+                    has_spoiler=True
                     await client.send_photo(
                         chat_id=channel_id,
                         photo=poster,
