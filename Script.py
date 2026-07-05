@@ -214,8 +214,11 @@ Money heist S0E01
 
 ★ Mᴇssᴀɢᴇ <code>{}</code>"""
 
-    CAPTION = """
-<b>📂 Fɪʟᴇ ɴᴀᴍᴇ : <b>{file_name}</b>"""
+    CAPTION = """<a href="https://t.me/mzmoviiezrequest"><b>{file_name}</b></a>
+
+<blockquote><b>𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝙱𝚢 ➥ </b>
+• <a href="https://t.me/mzmoviiez">𝐔𝐏𝐃𝐀𝐓𝐄 CHANNEL</a>
+• <a href="https://t.me/Mz_Moviiez_Update">MOVIEZ UPDATE</a></blockquote>"""
 
     IMDB_TEMPLATE_TXT = """
 <b>
