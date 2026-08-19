@@ -292,10 +292,14 @@ async def start(client, message):
                 temp.CHAT[user_id] = grp_id
                 tutorial = settings.get('tutorial3', TUTORIAL3) if is_third_shortener else settings.get('tutorial2', TUTORIAL2) if is_second_shortener else settings.get('tutorial', TUTORIAL)
                 
+                # Koyeb Anti-Bypass Gateway Protection Link
+                step = 3 if is_third_shortener else (2 if is_second_shortener else 1)
+                base_url = URL.rstrip('/')
+                
                 if safari.command[1].startswith('allfiles'):
-                    verify = await get_shortlink(f"https://telegram.me/{temp.U_NAME}?start=sendall_{user_id}_{verify_id}_{file_id}", grp_id, is_second_shortener, is_third_shortener)
+                    verify = f"{base_url}/verify?token=all_{user_id}_{grp_id}_{step}_{verify_id}_{file_id}"
                 else:
-                    verify = await get_shortlink(f"https://telegram.me/{temp.U_NAME}?start=verify_{user_id}_{verify_id}_{file_id}", grp_id, is_second_shortener, is_third_shortener)
+                    verify = f"{base_url}/verify?token={user_id}_{grp_id}_{step}_{verify_id}_{file_id}"
                 if not await db.check_trial_status(user_id):
                     buttons = [[
                         InlineKeyboardButton("✅️ ᴠᴇʀɪғʏ ✅️", url=verify)
