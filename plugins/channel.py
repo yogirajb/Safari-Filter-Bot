@@ -108,7 +108,8 @@ async def media(bot, message):
                     await bot.send_photo(
                         chat_id=int(channel),
                         photo=poster_url,
-                        caption=final_caption,
+                        caption=final_caption, 
+                        has_spoiler=True
                         parse_mode=enums.ParseMode.HTML
                     )
                 else:
