@@ -65,7 +65,7 @@ COLLECTION_NAME = environ.get('COLLECTION_NAME', 'mzmoviiez')
 STREAM_SITE = (environ.get('STREAM_SITE', ''))
 STREAM_API = (environ.get('STREAM_API', ''))
 STREAM_HTO = (environ.get('STREAMHTO', 'https://t.me/MzBotz'))
-STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "True")), False)
+STREAM_MODE = is_enabled((environ.get('STREAM_MODE', "False")), False)
 
 
 #verify site api and url
