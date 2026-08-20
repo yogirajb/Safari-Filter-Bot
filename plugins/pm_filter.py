@@ -41,44 +41,71 @@ BUTTONS = {}
 @Client.on_callback_query(filters.regex(r"^streaming"))
 async def stream_download(bot, query):
     try:
-        _, file_id, grp_id = query.data.split('#', 2)
-        user_id = query.from_user.id
-        settings = await get_settings(int(grp_id))
-        username =  query.from_user.mention
+        data_parts = query.data.split('#')
+        file_id = data_parts[1]
+        grp_id = data_parts[2] if len(data_parts) > 2 else "0"
+        
+        # 1. Database se file info nikalna
+        files_ = await get_file_details(file_id)
+        if not files_:
+            return await query.answer("File Not Found in DB!", show_alert=True)
+            
+        file_info = files_[0] if isinstance(files_, list) else files_
+        file_name = file_info.file_name
+
+        # 2. BIN_CHANNEL me forward/send karke msg object generate karna
         msg = await bot.send_cached_media(
             chat_id=BIN_CHANNEL,
-            file_id=file_id)
-            
-        online = f"{URL}watch/{str(msg.id)}/{quote_plus(get_name(msg))}?hash={get_hash(msg)}"
-        download = f"{URL}{str(msg.id)}/{quote_plus(get_name(msg))}?hash={get_hash(msg)}"
-        non_online = await stream_site(online, grp_id)
-        non_download = await stream_site(download, grp_id)
-        if not await db.has_premium_access(user_id) and settings.get('stream_mode', STREAM_MODE):
-            await msg.reply_text(text=f"tg://openmessage?user_id={user_id}\n•• ᴜꜱᴇʀɴᴀᴍᴇ : {username} STREAM MODE ON",
-                reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("📥 ᴅᴏᴡɴʟᴏᴀᴅ 📥", url=non_download),
-                        InlineKeyboardButton("🖥️ ꜱᴛʀᴇᴇᴍ 🖥️", url=non_online)]]))
-            await query.answer("𝐍𝐨𝐭𝐞:\n𝐓𝐡𝐞 𝐀𝐝𝐬-𝐅𝐫𝐞𝐞 𝐒𝐞𝐫𝐯𝐢𝐜𝐞𝐬 𝐎𝐧𝐥𝐲 𝐅𝐨𝐫 𝐏𝐫𝐞𝐦𝐢𝐮𝐦 𝐔𝐬𝐞𝐫𝐬\n\n‼️Tᴏ ᴋɴᴏᴡ ᴍᴏʀᴇ, ᴄʜᴇᴀᴋ ʙᴇʟᴏᴡ..!!!", show_alert=True)
-            await query.edit_message_reply_markup(
-                reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("📥 ᴅᴏᴡɴʟᴏᴀᴅ 📥", url=non_download),
-                        InlineKeyboardButton("🖥️ ꜱᴛʀᴇᴇᴍ 🖥️", url=non_online)
-                    ],[
-                        InlineKeyboardButton('⁉️ Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ ⁉️', url=STREAM_HTO)]]))
-            return
+            file_id=file_id
+        )
+
+        # 3. Clean URL Generation
+        base_url = URL.rstrip('/')
+        online = f"{base_url}/watch/{msg.id}/{quote_plus(get_name(msg))}?hash={get_hash(msg)}"
+        download = f"{base_url}/{msg.id}/{quote_plus(get_name(msg))}?hash={get_hash(msg)}"
+
+        # 4. Shortener / Direct URL Logic
+        if STREAM_MODE:
+            try:
+                non_download = await stream_site(download, grp_id)
+                non_online = await stream_site(online, grp_id)
+            except Exception as e:
+                logging.error(f"Stream Site Error: {e}")
+                non_download, non_online = download, online
+
+            buttons = [
+                [
+                    InlineKeyboardButton("📥 ᴅᴏᴡɴʟᴏᴀᴅ 📥", url=non_download),
+                    InlineKeyboardButton("🖥️ ꜱᴛʀᴇᴀᴍ 🖥️", url=non_online)
+                ],
+                [
+                    InlineKeyboardButton("⁉️ Hᴏᴡ Tᴏ Dᴏᴡɴʟᴏᴀᴅ ⁉️", url=STREAM_HTO)
+                ]
+            ]
         else:
-            await msg.reply_text(text=f"tg://openmessage?user_id={user_id}\n•• ᴜꜱᴇʀɴᴀᴍᴇ : {username} SHORT MODE OFF",
-                reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("📥 ᴅᴏᴡɴʟᴏᴀᴅ 📥", url=download),
-                        InlineKeyboardButton("🖥️ ꜱᴛʀᴇᴇᴍ 🖥️", url=online)]]))
-            await query.edit_message_reply_markup(
-                reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("📥 ᴅᴏᴡɴʟᴏᴀᴅ 📥", url=download),
-                        InlineKeyboardButton("🖥️ ꜱᴛʀᴇᴇᴍ 🖥️", url=online)
-                    ],[
-                        InlineKeyboardButton('⁉️ ᴄʟᴏsᴇ ⁉️', callback_data='close_data')]]))
+            buttons = [
+                [
+                    InlineKeyboardButton("📥 ᴅᴏᴡɴʟᴏᴀᴅ 📥", url=download),
+                    InlineKeyboardButton("🖥️ ꜱᴛʀᴇᴀᴍ 🖥️", url=online)
+                ]
+            ]
+
+        caption_text = (
+            f"<b>Here is your Stream & Download Link:</b>\n\n"
+            f"📁 <b>File:</b> <a href='{CHNL_LNK}'>{file_name}</a>\n\n"
+            f"⚡ <i>Fast Streaming & Download Available</i>"
+        )
+
+        await query.message.reply_text(
+            text=caption_text,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            disable_web_page_preview=True
+        )
+        await query.answer()
+
     except Exception as e:
-        await query.answer(f'{e}', show_alert=True)             
+        logging.error(f"Streaming Error: {e}")
+        await query.answer("Error: BIN_CHANNEL check karein ya Bot ko Admin banayein!", show_alert=True)             
         
 @Client.on_message(filters.private & filters.command("stream"))
 async def reply_stream(client, message):
