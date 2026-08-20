@@ -36,8 +36,6 @@ logger.setLevel(logging.ERROR)
 
 BUTTONS = {}
 
-
-
 @Client.on_callback_query(filters.regex(r"^streaming"))
 async def stream_download(bot, query):
     try:
