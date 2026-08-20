@@ -2,7 +2,7 @@
 # Please do not remove this credit
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait
-from info import CHANNELS, POST_CHANNELS
+from info import CHANNELS, POST_CHANNELS, AUTO_POST
 from database.ia_filterdb import save_file
 from utils import get_poster, get_size, temp
 from difflib import SequenceMatcher
@@ -81,6 +81,13 @@ def find_similar_key(new_key):
         if ratio >= 0.80:
             return existing_key
     return None
+
+
+@Client.on_message(filters.chat(CHANNELS) & media_filter)
+async def media(bot, message):
+    # 1. Check if Auto Post is enabled
+    if not AUTO_POST:
+        return
 
 
 @Client.on_message(filters.chat(CHANNELS) & media_filter)
