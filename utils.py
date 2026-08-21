@@ -218,6 +218,7 @@ async def broadcast_messages(user_id, message):
 async def get_poster(query, bulk=False, id=False, file=None, year=None):
     """
     TMDb se Movies aur Web Series dono ka poster + details laata hai.
+    Multi-level Smart Fallback ke sath.
     """
     if not TMDB_API_KEY:
         return None
@@ -226,42 +227,69 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
         media_type = "movie"
         if not id:
             q = (query or "").strip()
-            title = q
             search_year = year
 
-            # Query ke end me 4-digit year ho to (e.g. "avatar 2009")
+            # Query ke end me 4-digit year ho to nikalna
             if not search_year:
                 m = re.findall(r"\b(19\d\d|20\d\d)\b", q)
                 if m:
                     search_year = m[-1]
-                    title = re.sub(r"\b(19\d\d|20\d\d)\b", "", q).strip()
+                    q = re.sub(r"\b(19\d\d|20\d\d)\b", "", q).strip()
                 elif file is not None:
                     m = re.findall(r"\b(19\d\d|20\d\d)\b", str(file))
                     if m:
                         search_year = m[-1]
 
-            params = {
-                "api_key": TMDB_API_KEY,
-                "query": title,
-                "include_adult": "false",
-            }
-            if search_year:
-                try:
-                    params["year"] = int(search_year)
-                    params["primary_release_year"] = int(search_year)
-                    params["first_air_date_year"] = int(search_year)
-                except ValueError:
-                    pass
+            # Special characters hatana
+            clean_q = re.sub(r"[:\-_\[\]\(\)]", " ", q)
+            clean_q = " ".join(clean_q.split()).strip()
 
-            # /search/multi se Movie aur TV dono search honge
+            # Multi-Step Queries (Full title -> First 3 words -> First 2 words)
+            queries_to_try = [clean_q]
+            words = clean_q.split()
+            if len(words) > 3:
+                queries_to_try.append(" ".join(words[:3]))
+            if len(words) > 2:
+                queries_to_try.append(" ".join(words[:2]))
+
+            results = []
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=10) as resp:
-                    if resp.status != 200:
-                        logger.error(f"TMDb search error: {resp.status}")
-                        return None
-                    data = await resp.json()
+                for q_str in queries_to_try:
+                    # Step 1: Try with Year Filter
+                    params = {
+                        "api_key": TMDB_API_KEY,
+                        "query": q_str,
+                        "include_adult": "false",
+                    }
+                    if search_year:
+                        try:
+                            params["year"] = int(search_year)
+                            params["primary_release_year"] = int(search_year)
+                            params["first_air_date_year"] = int(search_year)
+                        except ValueError:
+                            pass
 
-            results = [r for r in data.get("results", []) if r.get("media_type") in ["movie", "tv"]]
+                    async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=10) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            res_list = [r for r in data.get("results", []) if r.get("media_type") in ["movie", "tv"]]
+                            if res_list:
+                                results = res_list
+                                break
+
+                    # Step 2: Fallback without Year Filter (Agar year ke sath nahi mila)
+                    if not results and search_year:
+                        params.pop("year", None)
+                        params.pop("primary_release_year", None)
+                        params.pop("first_air_date_year", None)
+                        async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=10) as resp:
+                            if resp.status == 200:
+                                data = await resp.json()
+                                res_list = [r for r in data.get("results", []) if r.get("media_type") in ["movie", "tv"]]
+                                if res_list:
+                                    results = res_list
+                                    break
+
             if not results:
                 return None
 
@@ -293,7 +321,6 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{TMDB_API_BASE}/{media_type}/{movie_id}", params=params, timeout=10) as resp:
                 if resp.status != 200 and media_type == "movie":
-                    # Fallback to TV if movie failed on direct ID
                     async with session.get(f"{TMDB_API_BASE}/tv/{movie_id}", params=params, timeout=10) as tv_resp:
                         movie = await tv_resp.json()
                         media_type = "tv"
