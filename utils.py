@@ -215,62 +215,56 @@ async def broadcast_messages(user_id, message):
 
 # ... imports ke upar/neeche jo bhi hai, sirf get_poster ko replace karna hai
 
-async def get_poster(query, bulk=False, id=False, file=None):
+async def get_poster(query, bulk=False, id=False, file=None, year=None):
     """
-    TMDb se poster + details laata hai.
-    IMDb library use nahi karte ab.
-    Return format purane get_poster jaisa hi rakha gaya hai
-    taaki baaki code na toote.
+    TMDb se Movies aur Web Series dono ka poster + details laata hai.
     """
     if not TMDB_API_KEY:
         return None
 
     try:
-        # ----- Title + Year nikaalna -----
+        media_type = "movie"
         if not id:
-            q = (query or "").strip().lower()
+            q = (query or "").strip()
             title = q
-            year = None
+            search_year = year
 
-            # query ke end me year ho to (e.g. "avatar 2009")
-            m = re.findall(r"[1-2]\d{3}$", q)
-            if m:
-                year = m[0]
-                title = q.replace(year, "").strip()
-            elif file is not None:
-                # file name se year nikal lo (Avatar.2009.1080p...)
-                m = re.findall(r"[1-2]\d{3}", file)
+            # Query ke end me 4-digit year ho to (e.g. "avatar 2009")
+            if not search_year:
+                m = re.findall(r"\b(19\d\d|20\d\d)\b", q)
                 if m:
-                    year = m[0]
+                    search_year = m[-1]
+                    title = re.sub(r"\b(19\d\d|20\d\d)\b", "", q).strip()
+                elif file is not None:
+                    m = re.findall(r"\b(19\d\d|20\d\d)\b", str(file))
+                    if m:
+                        search_year = m[-1]
 
-            # ----- TMDb search (requests se) -----
             params = {
                 "api_key": TMDB_API_KEY,
                 "query": title,
-                "include_adult": False,
+                "include_adult": "false",
             }
-            if year:
+            if search_year:
                 try:
-                    params["year"] = int(year)
+                    params["year"] = int(search_year)
+                    params["primary_release_year"] = int(search_year)
+                    params["first_air_date_year"] = int(search_year)
                 except ValueError:
                     pass
 
-            r = requests.get(
-                f"{TMDB_API_BASE}/search/movie",
-                params=params,
-                timeout=10
-            )
+            # /search/multi se Movie aur TV dono search honge
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=10) as resp:
+                    if resp.status != 200:
+                        logger.error(f"TMDb search error: {resp.status}")
+                        return None
+                    data = await resp.json()
 
-            if r.status_code != 200:
-                logger.error(f"TMDb search error: {r.status_code} {r.text}")
-                return None
-
-            data = r.json()
-            results = data.get("results") or []
+            results = [r for r in data.get("results", []) if r.get("media_type") in ["movie", "tv"]]
             if not results:
                 return None
 
-            # bulk=True: list chahiye (advantage_spell_chok, /imdb list ke liye)
             if bulk:
                 movies = []
                 for res in results[:10]:
@@ -283,36 +277,36 @@ async def get_poster(query, bulk=False, id=False, file=None):
                     )
                 return movies
 
-            # normal case: best match
-            movie_id = results[0].get("id")
+            best_match = results[0]
+            movie_id = best_match.get("id")
+            media_type = best_match.get("media_type", "movie")
         else:
             movie_id = int(query)
+            media_type = "movie"
 
-        # ----- TMDb movie details -----
+        # ----- TMDb Detailed Info -----
         params = {
             "api_key": TMDB_API_KEY,
             "append_to_response": "credits",
         }
-        r = requests.get(
-            f"{TMDB_API_BASE}/movie/{movie_id}",
-            params=params,
-            timeout=10
-        )
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{TMDB_API_BASE}/{media_type}/{movie_id}", params=params, timeout=10) as resp:
+                if resp.status != 200 and media_type == "movie":
+                    # Fallback to TV if movie failed on direct ID
+                    async with session.get(f"{TMDB_API_BASE}/tv/{movie_id}", params=params, timeout=10) as tv_resp:
+                        movie = await tv_resp.json()
+                        media_type = "tv"
+                else:
+                    movie = await resp.json()
 
-        if r.status_code != 200:
-            logger.error(f"TMDb movie error: {r.status_code} {r.text}")
-            return None
-
-        movie = r.json()
         if not movie or movie.get("success") is False:
             return None
 
-        # ----- Basic fields -----
+        # Basic fields
         title = movie.get("title") or movie.get("name")
-        release_date = movie.get("release_date") or ""
-        year = release_date[:4] if release_date else movie.get(
-            "first_air_date", ""
-        )[:4]
+        release_date = movie.get("release_date") or movie.get("first_air_date") or ""
+        movie_year = release_date[:4] if release_date else (str(year) if year else "N/A")
 
         poster_path = movie.get("poster_path")
         poster_url = f"{TMDB_IMG_BASE}{poster_path}" if poster_path else None
@@ -321,54 +315,43 @@ async def get_poster(query, bulk=False, id=False, file=None):
         if overview and len(overview) > 800:
             overview = overview[:800] + "..."
 
-        genres = ", ".join(
-            [g.get("name") for g in movie.get("genres") or []]
-        ) or "N/A"
-        countries = ", ".join(
-            [c.get("name") for c in movie.get("production_countries") or []]
-        ) or "N/A"
-        languages = ", ".join(
-            [l.get("english_name") for l in movie.get("spoken_languages") or []]
-        ) or "N/A"
+        genres = ", ".join([g.get("name") for g in movie.get("genres", [])]) or "Drama, Action"
+        countries = ", ".join([c.get("name") for c in movie.get("production_countries", [])]) or "N/A"
+        languages = ", ".join([l.get("english_name") for l in movie.get("spoken_languages", [])]) or "Hindi, English"
 
-        votes = movie.get("vote_count")
-        rating = movie.get("vote_average")
-        runtime = movie.get("runtime") or "N/A"
+        votes = movie.get("vote_count", "N/A")
+        rating = movie.get("vote_average", "N/A")
+        runtime = movie.get("runtime") or (movie.get("episode_run_time", [None])[0] if movie.get("episode_run_time") else "N/A")
 
-        # credits -> director, cast etc.
-        credits = movie.get("credits") or {}
-        cast_list = [c.get("name") for c in credits.get("cast") or []][:10]
+        credits = movie.get("credits", {})
+        cast_list = [c.get("name") for c in credits.get("cast", [])][:10]
         cast = ", ".join(cast_list) or "N/A"
 
-        crew = credits.get("crew") or []
-        directors = [c.get("name") for c in crew if c.get("job") == "Director"]
+        crew = credits.get("crew", [])
+        directors = [c.get("name") for c in crew if c.get("job") == "Director"] or [c.get("name") for c in movie.get("created_by", [])]
         writers = [c.get("name") for c in crew if c.get("department") == "Writing"]
-        producers = [c.get("name") for c in crew if c.get("job") == "Producer"]
-        composers = [
-            c.get("name") for c in crew if "Music" in (c.get("department") or "")
-        ]
+        producer = ", ".join([c.get("name") for c in crew if c.get("job") == "Producer"]) or "N/A"
+        composer = ", ".join([c.get("name") for c in crew if "Music" in (c.get("department") or "")]) or "N/A"
 
         director = ", ".join(directors) or "N/A"
         writer = ", ".join(writers) or "N/A"
-        producer = ", ".join(producers) or "N/A"
-        composer = ", ".join(composers) or "N/A"
 
         imdb_id = movie.get("imdb_id")
         if imdb_id:
             url = f"https://www.imdb.com/title/{imdb_id}"
             imdb_id_str = imdb_id
         else:
-            url = f"https://www.themoviedb.org/movie/{movie_id}"
+            url = f"https://www.themoviedb.org/{media_type}/{movie_id}"
             imdb_id_str = f"tmdb-{movie_id}"
 
         return {
             "title": title,
             "votes": votes,
             "aka": "N/A",
-            "seasons": "N/A",
-            "box_office": movie.get("revenue") or "N/A",
-            "localized_title": movie.get("original_title") or title,
-            "kind": "movie",
+            "seasons": str(movie.get("number_of_seasons", "N/A")),
+            "box_office": movie.get("revenue", "N/A"),
+            "localized_title": movie.get("original_title") or movie.get("original_name") or title,
+            "kind": media_type,
             "imdb_id": imdb_id_str,
             "cast": cast,
             "runtime": str(runtime),
@@ -383,7 +366,7 @@ async def get_poster(query, bulk=False, id=False, file=None):
             "music_team": "N/A",
             "distributors": "N/A",
             "release_date": release_date or "N/A",
-            "year": year or "N/A",
+            "year": movie_year,
             "genres": genres,
             "poster": poster_url,
             "plot": overview,
