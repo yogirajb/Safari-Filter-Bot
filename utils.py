@@ -212,9 +212,6 @@ async def broadcast_messages(user_id, message):
     except Exception:
         return False, "Error"
 
-
-# ... imports ke upar/neeche jo bhi hai, sirf get_poster ko replace karna hai
-
 async def get_poster(query, bulk=False, id=False, file=None, year=None):
     """
     TMDb se Movies aur Web Series dono ka poster + details laata hai.
@@ -229,22 +226,24 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             q = (query or "").strip()
             search_year = year
 
-            # Query ya File name se Year extract karna
+            # Query ya File name se Year extract karna (Priority: Parameter > File > Query)
             if not search_year:
-                m = re.findall(r"\b(19\d\d|20\d\d)\b", q)
-                if m:
-                    search_year = m[-1]
-                    q = re.sub(r"\b(19\d\d|20\d\d)\b", "", q).strip()
-                elif file is not None:
+                if file is not None:
                     m = re.findall(r"\b(19\d\d|20\d\d)\b", str(file))
                     if m:
                         search_year = m[-1]
+                if not search_year:
+                    m = re.findall(r"\b(19\d\d|20\d\d)\b", q)
+                    if m:
+                        search_year = m[-1]
+                        q = re.sub(r"\b(19\d\d|20\d\d)\b", "", q).strip()
 
-            # Special characters hatana
-            clean_q = re.sub(r"[:\-_\[\]\(\)]", " ", q)
+            # Brackets, tags aur special characters hatana
+            clean_q = re.sub(r"\[.*?\]|\(.*?\)", " ", q)
+            clean_q = re.sub(r"[:\-_]", " ", clean_q)
             clean_q = " ".join(clean_q.split()).strip()
 
-            # Multi-Step Queries: Poora title -> Pehle 3 shabd -> Pehle 2 shabd
+            # Multi-Step Queries: Full title -> First 3 words -> First 2 words
             queries_to_try = [clean_q]
             words = clean_q.split()
             if len(words) > 3:
@@ -276,7 +275,8 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                                 results = res_list
                                 break
 
-                    # Agar explicit search_year nahi diya gaya tha tabhi bina year ke fallback karein
+                    # STRICT FIX: Agar search_year diya tha, to bina year ke fallback KABHI NA KAREIN!
+                    # Taaki 2026 ki movie par 2017 ka galat Jumanji data na aaye.
                     if not results and not search_year:
                         async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=10) as resp:
                             if resp.status == 200:
@@ -301,7 +301,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                     )
                 return movies
 
-            # Year Validation Check (Wrong movie protection)
+            # Result Release Year Verification (Galat saal ka poster rokne ke liye)
             best_match = None
             if search_year:
                 for r in results:
