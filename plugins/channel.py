@@ -67,7 +67,7 @@ def clean_movie_title(filename):
         r"x264|x265|hevc|10bit|ds4k|aac\d*|ddp\d*|dts|truehd|h\.264|h\.265|sub|esub|complete|zip|pack|"
         r"kannada|hindi|english|telugu|tamil|malayalam|marathi|gujarati|punjabi|bengali|"
         r"hq|clean|hd|combined|sample|uncut|uply|archie|mgreborn|mkvcinemas|zee5|amzn|dual|audio|p\d+t\d+|"
-        r"sonyliv|sony|liv|itunes|hotstar|jiocinema|voot|altbalaji|aha|mxplayer|netflix|primevideo|"
+        r"sonyliv|sony|liv|itunes|hotstar|jiocinema|voot|altbalaji|org|esubs|10bit|aha|mxplayer|netflix|primevideo|"
         r"hdr10plus|hdr10|hdr|dv|dovi|x\s*pro|pro|v\d+|@\w+)\b"
     )
     main_title = re.sub(junk_patterns, " ", main_title)
