@@ -218,7 +218,7 @@ async def broadcast_messages(user_id, message):
 async def get_poster(query, bulk=False, id=False, file=None, year=None):
     """
     TMDb se Movies aur Web Series dono ka poster + details laata hai.
-    Multi-level Smart Fallback ke sath.
+    Strict Year Matching aur Multi-Level Smart Fallback ke sath.
     """
     if not TMDB_API_KEY:
         return None
@@ -229,7 +229,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             q = (query or "").strip()
             search_year = year
 
-            # Query ke end me 4-digit year ho to nikalna
+            # Query ya File name se Year extract karna
             if not search_year:
                 m = re.findall(r"\b(19\d\d|20\d\d)\b", q)
                 if m:
@@ -244,7 +244,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             clean_q = re.sub(r"[:\-_\[\]\(\)]", " ", q)
             clean_q = " ".join(clean_q.split()).strip()
 
-            # Multi-Step Queries (Full title -> First 3 words -> First 2 words)
+            # Multi-Step Queries: Poora title -> Pehle 3 shabd -> Pehle 2 shabd
             queries_to_try = [clean_q]
             words = clean_q.split()
             if len(words) > 3:
@@ -255,7 +255,6 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             results = []
             async with aiohttp.ClientSession() as session:
                 for q_str in queries_to_try:
-                    # Step 1: Try with Year Filter
                     params = {
                         "api_key": TMDB_API_KEY,
                         "query": q_str,
@@ -277,11 +276,8 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                                 results = res_list
                                 break
 
-                    # Step 2: Fallback without Year Filter (Agar year ke sath nahi mila)
-                    if not results and search_year:
-                        params.pop("year", None)
-                        params.pop("primary_release_year", None)
-                        params.pop("first_air_date_year", None)
+                    # Agar explicit search_year nahi diya gaya tha tabhi bina year ke fallback karein
+                    if not results and not search_year:
                         async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=10) as resp:
                             if resp.status == 200:
                                 data = await resp.json()
@@ -305,14 +301,28 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                     )
                 return movies
 
-            best_match = results[0]
+            # Year Validation Check (Wrong movie protection)
+            best_match = None
+            if search_year:
+                for r in results:
+                    r_date = r.get("release_date") or r.get("first_air_date") or ""
+                    r_year = r_date[:4]
+                    if r_year and abs(int(r_year) - int(search_year)) <= 1:
+                        best_match = r
+                        break
+            else:
+                best_match = results[0]
+
+            if not best_match:
+                return None
+
             movie_id = best_match.get("id")
             media_type = best_match.get("media_type", "movie")
         else:
             movie_id = int(query)
             media_type = "movie"
 
-        # ----- TMDb Detailed Info -----
+        # ----- Detailed TMDb Info -----
         params = {
             "api_key": TMDB_API_KEY,
             "append_to_response": "credits",
