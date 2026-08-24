@@ -1,4 +1,4 @@
-# This code has been modified by @Safaridev
+# This code has been modified by @MzBotz
 # Please do not remove this credit
 import os
 import requests
@@ -215,7 +215,7 @@ async def broadcast_messages(user_id, message):
 async def get_poster(query, bulk=False, id=False, file=None, year=None):
     """
     TMDb se Movies aur Web Series dono ka poster + details laata hai.
-    Strict Year Matching aur Multi-Level Smart Fallback ke sath.
+    Strict Year Matching, Exact Title Priority aur Multi-Level Smart Fallback ke sath.
     """
     if not TMDB_API_KEY:
         return None
@@ -251,6 +251,13 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             if len(words) > 2:
                 queries_to_try.append(" ".join(words[:2]))
 
+            # Check if source is a TV Series / Serial
+            is_series_file = False
+            if file:
+                is_series_file = bool(re.search(r"(?i)\b(?:season|s\d+|episode|ep\d+|e\d+)\b", str(file)))
+            elif re.search(r"(?i)\b(?:season|s\d+|episode|ep\d+|e\d+)\b", q):
+                is_series_file = True
+
             results = []
             async with aiohttp.ClientSession() as session:
                 for q_str in queries_to_try:
@@ -276,7 +283,6 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                                 break
 
                     # STRICT FIX: Agar search_year diya tha, to bina year ke fallback KABHI NA KAREIN!
-                    # Taaki 2026 ki movie par 2017 ka galat Jumanji data na aaye.
                     if not results and not search_year:
                         async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=10) as resp:
                             if resp.status == 200:
@@ -301,17 +307,50 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                     )
                 return movies
 
-            # Result Release Year Verification (Galat saal ka poster rokne ke liye)
+            # Result Release Year & Exact Title Verification (Strict Matching Engine)
             best_match = None
             if search_year:
+                # 1. First priority: Exact Title Match + Year Match
                 for r in results:
+                    r_title = (r.get("title") or r.get("name") or "").strip().lower()
+                    r_orig = (r.get("original_title") or r.get("original_name") or "").strip().lower()
                     r_date = r.get("release_date") or r.get("first_air_date") or ""
                     r_year = r_date[:4]
+                    
                     if r_year and abs(int(r_year) - int(search_year)) <= 1:
+                        if clean_q.lower() in [r_title, r_orig]:
+                            best_match = r
+                            break
+
+                # 2. Second priority: Media Type Alignment (Movie vs Series) + Year Match
+                if not best_match:
+                    for r in results:
+                        r_date = r.get("release_date") or r.get("first_air_date") or ""
+                        r_year = r_date[:4]
+                        r_type = r.get("media_type")
+                        
+                        if r_year and abs(int(r_year) - int(search_year)) <= 1:
+                            if (is_series_file and r_type == "tv") or (not is_series_file and r_type == "movie"):
+                                best_match = r
+                                break
+
+                # 3. Third priority: Any close year match
+                if not best_match:
+                    for r in results:
+                        r_date = r.get("release_date") or r.get("first_air_date") or ""
+                        r_year = r_date[:4]
+                        if r_year and abs(int(r_year) - int(search_year)) <= 1:
+                            best_match = r
+                            break
+            else:
+                # Agar saal na ho, to Media Type aur Exact Match check karein
+                for r in results:
+                    r_title = (r.get("title") or r.get("name") or "").strip().lower()
+                    if clean_q.lower() == r_title:
                         best_match = r
                         break
-            else:
-                best_match = results[0]
+                if not best_match:
+                    best_match = results[0]
 
             if not best_match:
                 return None
