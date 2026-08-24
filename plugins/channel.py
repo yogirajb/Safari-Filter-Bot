@@ -29,7 +29,9 @@ language_map = {
     "guj": "Gujarati", "gujarati": "Gujarati",
     "pun": "Punjabi", "punjabi": "Punjabi",
     "jap": "Japanese", "japanese": "Japanese",
-    "kor": "Korean", "korean": "Korean"
+    "kor": "Korean", "korean": "Korean", 
+    "ben": "Bengali", "bengali": "Bengali", 
+    "chi": "Chinese", "chinese": "Chinese"
 }
 
 def clean_movie_title(filename):
@@ -183,7 +185,7 @@ async def media(bot, message):
             canonical = language_map[l.lower()]
             if canonical not in unique_langs:
                 unique_langs.append(canonical)
-        detected_languages = ", ".join(unique_langs) if unique_langs else "Hindi"
+        detected_languages = ", ".join(unique_langs) if unique_langs else "N/A"
 
         # Unique Key for Merging (Guarantees all qualities & files bundle together)
         current_merge_key = f"{clean_title.lower()}_{season_tag.lower()}_{extracted_year or ''}".strip()
