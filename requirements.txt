@@ -8,14 +8,11 @@ marshmallow==3.14.1
 requests
 bs4
 cinemagoer
-datetime
 pytz
 aiohttp
 cinemagoer
-shortzy
 
 PyLeaves==1.0.2
-cinemagoer
 shortzy==0.0.8
 aiofiles
 pyromod==1.5
