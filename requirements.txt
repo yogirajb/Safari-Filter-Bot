@@ -10,7 +10,6 @@ bs4
 cinemagoer
 pytz
 aiohttp
-cinemagoer
 
 PyLeaves==1.0.2
 shortzy==0.0.8
