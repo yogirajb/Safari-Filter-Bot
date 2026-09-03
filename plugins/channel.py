@@ -166,16 +166,20 @@ async def media(bot, message):
         if not clean_title:
             clean_title = raw_name.split()[0]
 
-                # Part / Split file detection
-        part_match = re.search(r"(?i)\b(part\s*\d+|pt\s*\d+|\.00\d+)\b", raw_name)
-        part_tag = f" [{part_match.group(1).upper()}]" if part_match else ""
+        # Comprehensive Part / Split / CD Detection
+        # Handles: .part1, .part01, part 1, pt 1, .001, .002, cd1, disc1
+        part_match = re.search(r"(?i)(?:[._\-\s]|\b)(part\s*\d+|pt\s*\d+|\.00\d+|cd\s*\d+|disc\s*\d+)(?:[._\-\s]|\b)", raw_name)
+        
+        part_tag = ""
+        if part_match:
+            raw_part = part_match.group(1).replace('.', '').strip().upper()
+            part_tag = f" [{raw_part}]"
 
         file_name_display = raw_name.replace('_', ' ')
-        if len(file_name_display) > 55:
-            # Agar part hai, to part tag ko truncate hone se bachayein
-            file_name_display = file_name_display[:50] + "..." + part_tag
+        if len(file_name_display) > 50:
+            file_name_display = file_name_display[:45].strip() + "..." + part_tag
         else:
-            file_name_display = file_name_display
+            file_name_display = file_name_display + (part_tag if part_tag and part_tag.strip(" []") not in file_name_display.upper() else "")
 
         size_text = get_size(media.file_size)
         bot_uname = temp.U_NAME or (await bot.get_me()).username
