@@ -166,9 +166,16 @@ async def media(bot, message):
         if not clean_title:
             clean_title = raw_name.split()[0]
 
+                # Part / Split file detection
+        part_match = re.search(r"(?i)\b(part\s*\d+|pt\s*\d+|\.00\d+)\b", raw_name)
+        part_tag = f" [{part_match.group(1).upper()}]" if part_match else ""
+
         file_name_display = raw_name.replace('_', ' ')
-        if len(file_name_display) > 60:
-            file_name_display = file_name_display[:57] + "..."
+        if len(file_name_display) > 55:
+            # Agar part hai, to part tag ko truncate hone se bachayein
+            file_name_display = file_name_display[:50] + "..." + part_tag
+        else:
+            file_name_display = file_name_display
 
         size_text = get_size(media.file_size)
         bot_uname = temp.U_NAME or (await bot.get_me()).username
