@@ -7,7 +7,7 @@ motor==2.5.1
 marshmallow==3.14.1
 requests
 bs4
-git+https://github.com/Joelkb/cinemagoer
+cinemagoer
 datetime
 pytz
 aiohttp
