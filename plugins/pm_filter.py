@@ -1,6 +1,8 @@
 # This code has been modified by @Safaridev
 # Please do not remove this credit
 import asyncio
+import aiohttp
+import json
 import re
 import ast
 import math
@@ -8,6 +10,7 @@ import random
 import os
 lock = asyncio.Lock()
 import pytz
+from fuzzywuzzy import fuzz
 from datetime import datetime, timedelta, date, time
 from telegram import InputMediaPhoto
 from pyrogram.errors.exceptions.bad_request_400 import MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
@@ -2467,11 +2470,8 @@ async def auto_filter(client, msg, spoll=False):
         await message.reply(f"{e}")
         return
 
-import aiohttp
-from fuzzywuzzy import fuzz
-
 async def get_spell_correction(query):
-    """Google Suggest API with real browser User-Agent"""
+    """Google Suggest API with safe JSON decode"""
     try:
         url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={quote_plus(query)}"
         headers = {
@@ -2480,7 +2480,8 @@ async def get_spell_correction(query):
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
                 if resp.status == 200:
-                    data = await resp.json()
+                    text_data = await resp.text()
+                    data = json.loads(text_data)
                     if data and len(data) > 1 and data[1]:
                         for item in data[1]:
                             cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
