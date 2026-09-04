@@ -2467,6 +2467,22 @@ async def auto_filter(client, msg, spoll=False):
         await message.reply(f"{e}")
         return
 
+async def get_spell_correction(query):
+    """Google Suggest API se realtime spelling correction fetch karta hai"""
+    try:
+        url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={quote_plus(query)}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=3) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data and len(data) > 1 and data[1]:
+                        suggested = data[1][0]
+                        suggested = re.sub(r"(?i)\b(movie|film|full movie|download|watch online)\b", "", suggested).strip()
+                        return suggested
+    except Exception as e:
+        logger.error(f"Spell suggestion error: {e}")
+    return None
+
 async def advantage_spell_chok(client, message):
     mv_id = message.id
     search = message.text
@@ -2482,27 +2498,29 @@ async def advantage_spell_chok(client, message):
     clean_q = re.sub(r"[:\-_]", " ", clean_q)
     clean_q = " ".join(clean_q.split()).strip()
 
-    # Smart Multi-Word Fallback: Pehle poora query, fir first 2 words
-    queries_to_try = [clean_q]
+    # 1. Google Spell Fix Check (e.g. puspa -> pushpa)
+    corrected_q = await get_spell_correction(clean_q)
+    
+    queries_to_try = []
+    if corrected_q and corrected_q.lower() != clean_q.lower():
+        queries_to_try.append(corrected_q)
+    
+    queries_to_try.append(clean_q)
+    
     words = clean_q.split()
     if len(words) > 2:
         queries_to_try.append(" ".join(words[:2]))
-    if len(words) > 1 and " ".join(words[:1]) not in queries_to_try:
-        queries_to_try.append(words[0])
 
     movies = []
-    try:
-        for q_try in queries_to_try:
-            if not q_try:
-                continue
+    for q_try in queries_to_try:
+        try:
             movies = await get_poster(q_try, bulk=True)
             if movies:
                 break
-    except Exception as e:
-        logger.error(f"Error fetching suggestions in advantage_spell_chok: {e}")
-        movies = []
+        except Exception:
+            continue
 
-    # Valid Titles Filter (None, Empty aur Duplicate hatana)
+    # Valid Titles Filter
     valid_movies = []
     seen_titles = set()
     if movies:
@@ -2514,7 +2532,7 @@ async def advantage_spell_chok(client, message):
                     seen_titles.add(clean_m_title.lower())
                     valid_movies.append((clean_m_title, getattr(m, "movieID", None) or m.get("id")))
 
-    # Agar koi valid movie na mile to Google Search Button dikhayein
+    # Fallback to Google Search Button
     if not valid_movies:
         google = search.replace(" ", "+")
         button = [[
@@ -2529,7 +2547,7 @@ async def advantage_spell_chok(client, message):
             pass
         return
 
-    # Suggestions Buttons taiyar karna (Max 6 suggestions)
+    # Suggestions Buttons
     buttons = [
         [InlineKeyboardButton(text=m_title, callback_data=f"spol#{m_id}#{user}")]
         for m_title, m_id in valid_movies[:6]
