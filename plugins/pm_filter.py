@@ -2467,20 +2467,27 @@ async def auto_filter(client, msg, spoll=False):
         await message.reply(f"{e}")
         return
 
+import aiohttp
+from fuzzywuzzy import fuzz
+
 async def get_spell_correction(query):
-    """Google Suggest API se realtime spelling correction fetch karta hai"""
+    """Google Suggest API with real browser User-Agent"""
     try:
         url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={quote_plus(query)}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=3) as resp:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     if data and len(data) > 1 and data[1]:
-                        suggested = data[1][0]
-                        suggested = re.sub(r"(?i)\b(movie|film|full movie|download|watch online)\b", "", suggested).strip()
-                        return suggested
+                        for item in data[1]:
+                            cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
+                            if cleaned and cleaned.lower() != query.lower():
+                                return cleaned
     except Exception as e:
-        logger.error(f"Spell suggestion error: {e}")
+        logger.error(f"Google Suggest Error: {e}")
     return None
 
 async def advantage_spell_chok(client, message):
@@ -2498,41 +2505,53 @@ async def advantage_spell_chok(client, message):
     clean_q = re.sub(r"[:\-_]", " ", clean_q)
     clean_q = " ".join(clean_q.split()).strip()
 
-    # 1. Google Spell Fix Check (e.g. puspa -> pushpa)
+    # 1. Realtime Spelling Fix check
     corrected_q = await get_spell_correction(clean_q)
-    
+
+    # 2. Priority queries list (Corrected query gets top priority)
     queries_to_try = []
-    if corrected_q and corrected_q.lower() != clean_q.lower():
+    if corrected_q:
         queries_to_try.append(corrected_q)
-    
     queries_to_try.append(clean_q)
     
     words = clean_q.split()
     if len(words) > 2:
         queries_to_try.append(" ".join(words[:2]))
+    if len(words) > 1:
+        queries_to_try.append(words[0])
 
-    movies = []
+    all_found_movies = []
     for q_try in queries_to_try:
         try:
-            movies = await get_poster(q_try, bulk=True)
-            if movies:
-                break
+            res = await get_poster(q_try, bulk=True)
+            if res:
+                all_found_movies.extend(res)
+                # Agar corrected spelling se mil gaya to aur aage search mat karo
+                if corrected_q and q_try == corrected_q:
+                    break
         except Exception:
             continue
 
-    # Valid Titles Filter
+    # 3. Valid Titles Filter & Ranking
     valid_movies = []
     seen_titles = set()
-    if movies:
-        for m in movies:
-            m_title = getattr(m, "title", None) or (m.get("title") if hasattr(m, "get") else None) or (m.get("name") if hasattr(m, "get") else None)
-            if m_title and str(m_title).strip() and str(m_title).lower() != "none":
-                clean_m_title = str(m_title).strip()
-                if clean_m_title.lower() not in seen_titles:
-                    seen_titles.add(clean_m_title.lower())
-                    valid_movies.append((clean_m_title, getattr(m, "movieID", None) or m.get("id")))
+    target_match = corrected_q if corrected_q else clean_q
 
-    # Fallback to Google Search Button
+    for m in all_found_movies:
+        m_title = getattr(m, "title", None) or (m.get("title") if hasattr(m, "get") else None) or (m.get("name") if hasattr(m, "get") else None)
+        if m_title and str(m_title).strip() and str(m_title).lower() != "none":
+            clean_m_title = str(m_title).strip()
+            if clean_m_title.lower() not in seen_titles:
+                seen_titles.add(clean_m_title.lower())
+                m_id = getattr(m, "movieID", None) or (m.get("id") if hasattr(m, "get") else None)
+                # Fuzzy score calculate karein taaki Pushpa type matches upar aayein
+                score = fuzz.partial_ratio(target_match.lower(), clean_m_title.lower())
+                valid_movies.append((clean_m_title, m_id, score))
+
+    # High match score wale pehle dikhao
+    valid_movies.sort(key=lambda x: x[2], reverse=True)
+
+    # Agar koi movie na mile to Google Search button
     if not valid_movies:
         google = search.replace(" ", "+")
         button = [[
@@ -2547,10 +2566,10 @@ async def advantage_spell_chok(client, message):
             pass
         return
 
-    # Suggestions Buttons
+    # Buttons taiyar karein (Top 6 accurate suggestions)
     buttons = [
-        [InlineKeyboardButton(text=m_title, callback_data=f"spol#{m_id}#{user}")]
-        for m_title, m_id in valid_movies[:6]
+        [InlineKeyboardButton(text=item[0], callback_data=f"spol#{item[1]}#{user}")]
+        for item in valid_movies[:6]
     ]
     buttons.append([InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')])
 
