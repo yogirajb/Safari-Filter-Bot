@@ -2471,32 +2471,51 @@ async def advantage_spell_chok(client, message):
     mv_id = message.id
     search = message.text
     chat_id = message.chat.id
-    user = message.from_user.id
+    user = message.from_user.id if message.from_user else 0
     settings = await get_settings(chat_id)
-    find = search.split(" ")
-    query = ""
-    removes = ["in","upload", "series", "full", "horror", "thriller", "mystery", "print", "file", "send", "chahiye", "chiye", "movi", "movie", "bhejo", "dijiye", "jaldi", "hd", "bollywood", "hollywood", "south", "karo"]
-    for x in find:
-        if x in removes:
-            continue
-        else:
-            query = query + x + " "
-    query = re.sub(
+    
+    # Clean Search Text
+    clean_q = re.sub(
         r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
-        "", message.text, flags=re.IGNORECASE)
-    query = query.strip() + " movie"
+        "", search, flags=re.IGNORECASE
+    )
+    clean_q = re.sub(r"[:\-_]", " ", clean_q)
+    clean_q = " ".join(clean_q.split()).strip()
+
+    # Smart Multi-Word Fallback: Pehle poora query, fir first 2 words
+    queries_to_try = [clean_q]
+    words = clean_q.split()
+    if len(words) > 2:
+        queries_to_try.append(" ".join(words[:2]))
+    if len(words) > 1 and " ".join(words[:1]) not in queries_to_try:
+        queries_to_try.append(words[0])
+
+    movies = []
     try:
-        movies = await get_poster(search, bulk=True)
-    except:
-        k = await message.reply(script.I_CUDNT.format(search))
-        await asyncio.sleep(60)
-        await k.delete()
-        try:
-            await message.delete()
-        except:
-            pass
-        return
-    if not movies:
+        for q_try in queries_to_try:
+            if not q_try:
+                continue
+            movies = await get_poster(q_try, bulk=True)
+            if movies:
+                break
+    except Exception as e:
+        logger.error(f"Error fetching suggestions in advantage_spell_chok: {e}")
+        movies = []
+
+    # Valid Titles Filter (None, Empty aur Duplicate hatana)
+    valid_movies = []
+    seen_titles = set()
+    if movies:
+        for m in movies:
+            m_title = getattr(m, "title", None) or (m.get("title") if hasattr(m, "get") else None) or (m.get("name") if hasattr(m, "get") else None)
+            if m_title and str(m_title).strip() and str(m_title).lower() != "none":
+                clean_m_title = str(m_title).strip()
+                if clean_m_title.lower() not in seen_titles:
+                    seen_titles.add(clean_m_title.lower())
+                    valid_movies.append((clean_m_title, getattr(m, "movieID", None) or m.get("id")))
+
+    # Agar koi valid movie na mile to Google Search Button dikhayein
+    if not valid_movies:
         google = search.replace(" ", "+")
         button = [[
             InlineKeyboardButton("🔍 ᴄʜᴇᴄᴋ sᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ 🔍", url=f"https://www.google.com/search?q={google}")
@@ -2509,16 +2528,19 @@ async def advantage_spell_chok(client, message):
         except:
             pass
         return
-    user = message.from_user.id if message.from_user else 0
-    buttons = [[
-        InlineKeyboardButton(text=movie.get('title'), callback_data=f"spol#{movie.movieID}#{user}")
+
+    # Suggestions Buttons taiyar karna (Max 6 suggestions)
+    buttons = [
+        [InlineKeyboardButton(text=m_title, callback_data=f"spol#{m_id}#{user}")]
+        for m_title, m_id in valid_movies[:6]
     ]
-        for movie in movies
-    ]
-    buttons.append(
-        [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
+    buttons.append([InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')])
+
+    d = await message.reply_text(
+        text=script.CUDNT_FND.format(search),
+        reply_markup=InlineKeyboardMarkup(buttons),
+        reply_to_message_id=message.id
     )
-    d = await message.reply_text(text=script.CUDNT_FND.format(search), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
     await asyncio.sleep(120)
     await d.delete()
     try:
