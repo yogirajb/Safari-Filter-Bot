@@ -129,39 +129,45 @@ def format_episode_string(episodes_set, is_combined):
 
 
 def build_safe_caption(title, genres, rating, year, ep_string, languages, plot, single_all_files_link):
-    """Builds caption and ensures it strictly stays well under 1024 Telegram limit"""
-    ep_line = f"📺 Episode: {ep_string}\n" if ep_string else ""
+    """Builds bold caption and ensures it strictly stays well under 1024 Telegram limit"""
+    ep_line = f"📺 <b>Episode :</b> <b>{ep_string}</b>\n" if ep_string else ""
     
+    # Rating ko 1 decimal point me clean karne ke liye (e.g. 6.955 -> 7.0)
+    try:
+        clean_rating = f"{float(rating):.1f}"
+    except Exception:
+        clean_rating = str(rating)
+
     # Safe trim on plot
-    if len(plot) > 450:
-        plot = plot[:445].rstrip() + "..."
+    if len(plot) > 420:
+        plot = plot[:415].rstrip() + "..."
 
     caption = (
-        f"🏷️Title: {title}\n"
-        f"🎬 Genres: {genres}\n"
-        f"⭐ Rating: {rating}/10\n"
-        f"📆 Year: {year}\n"
+        f"🏷️ <b>Title :</b> <b>{title}</b>\n"
+        f"🎬 <b>Genres :</b> <b>{genres}</b>\n"
+        f"⭐ <b>Rating :</b> <b>{clean_rating}/10</b>\n"
+        f"📆 <b>Year :</b> <b>{year}</b>\n"
         f"{ep_line}"
-        f"🌐 Language: {languages}\n\n"
-        f"📕 Story: {plot}\n\n"
-        f"🔗 <a href='{single_all_files_link}'>Click Here To Get Files</a>\n\n"
-        f"⚡ Powered By : <a href='https://t.me/mzmoviiez'>MzMoviiez</a>"
+        f"🌐 <b>Language :</b> <b>{languages}</b>\n\n"
+        f"📕 <b>Story :</b> <b>{plot}</b>\n\n"
+        f"🔗 <b><a href='{single_all_files_link}'>Click Here To Get Files</a></b>\n\n"
+        f"⚡ <b>Powered By :</b> <b><a href='https://t.me/mzmoviiez'>MzMoviiez</a></b>"
     )
 
     # Hard emergency guard against length overflow
     if len(caption) > SAFE_MAX_CAPTION_LENGTH:
         overflow = len(caption) - SAFE_MAX_CAPTION_LENGTH
-        trimmed_plot = plot[:-overflow - 5].rstrip() + "..."
+        trimmed_plot = plot[:-overflow - 10].rstrip() + "..."
         caption = (
-            f"🏷️Title: {title}\n"
-            f"🎬 Genres: {genres}\n"
-            f"⭐ Rating: {rating}/10\n"
-            f"📆 Year: {year}\n"
+            f"🏷️ <b>Title :</b> <b>{title}</b>\n"
+            f"🎬 <b>Genres :</b> <b>{genres}</b>\n"
+            f"⭐ <b>Rating :</b> <b>{clean_rating}/10</b>\n"
+            f"📆 <b>Year :</b> <b>{year}</b>\n"
             f"{ep_line}"
-            f"🌐 Language: {languages}\n\n"
-            f"📕 Story: {trimmed_plot}\n\n"
-            f"🔗 <a href='{single_all_files_link}'>Click Here To Get Files</a>\n\n"
-            f"⚡ Powered By : <a href='https://t.me/mzmoviiez'>MzMoviiez</a>"
+            f"🌐 <b>Language :</b> <b>{languages}</b>\n\n"
+            f"📕 <b>Story :</b> <b>{trimmed_plot}</b>\n\n"
+            f"🔗 <b><a href='{single_all_files_link}'>Click Here To Get Files</a></b>\n\n"
+            f"⚡ <b>Powered By :</b> <b><a href='https://t.me/mzmoviiez'>𝐌𝐳𝐌𝐨𝐯𝐢𝐢𝐞𝐳</a></b>"
         )
     return caption
 
