@@ -170,7 +170,7 @@ def build_safe_caption(title, genres, rating, year, ep_string, qualities, langua
         f"🌐 <b>Language :</b> <b>{languages}</b>\n\n"
         f"📕 <b>Story :</b> <b>{plot}</b>\n\n"
         f"🔗 <b><a href='{single_all_files_link}'>Click Here To Get Files</a></b>\n\n"
-        f"⚡ <b>Powered By :</b> <b><a href='https://t.me/mzmoviiez'>MzMoviiez</a></b>"
+        f"⚡ <b>Powered By :</b> <b><a href='https://t.me/mzmoviiez'>𝐌𝐳𝐌𝐨𝐯𝐢𝐢𝐞𝐳</a></b>"
     )
 
     if len(caption) > SAFE_MAX_CAPTION_LENGTH:
