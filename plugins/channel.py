@@ -468,5 +468,5 @@ async def media(bot, message):
                 "edited_for_comb": False
             }
 
-except Exception as e:
+    except Exception as e:
         logging.error(f"Auto post execution error: {str(e)}")
