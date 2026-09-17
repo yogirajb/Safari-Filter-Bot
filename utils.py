@@ -498,4 +498,182 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
         return None
 
 async def get_settings(group_id):
-    settin
+    settings = temp.SETTINGS.get(group_id)
+    if not settings:
+        settings = await db.get_settings(group_id)
+        temp.SETTINGS[group_id] = settings
+    return settings
+    
+async def save_group_settings(group_id, key, value):
+    current = await get_settings(group_id)
+    current[key] = value
+    temp.SETTINGS[group_id] = current
+    await db.update_settings(group_id, current)
+
+def get_size(size):
+    units = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
+    size = float(size)
+    i = 0
+    while size >= 1024.0 and i < len(units):
+        i += 1
+        size /= 1024.0
+    return "%.2f %s" % (size, units[i])
+    
+def list_to_str(k): 
+    if not k:
+        return "N/A"
+    elif len(k) == 1:
+        return str(k[0])
+    else:
+        return ' '.join(f'{elem}, ' for elem in k)
+        
+def get_file_id(msg: Message):
+    if msg.media:
+        for message_type in (
+            "photo",
+            "animation",
+            "audio",
+            "document",
+            "video",
+            "video_note",
+            "voice",
+            "sticker"
+        ):
+            obj = getattr(msg, message_type)
+            if obj:
+                setattr(obj, "message_type", message_type)
+                return obj
+
+def extract_user(message: Message) -> Union[int, str]:
+    user_id = None
+    user_first_name = None
+    if message.reply_to_message:
+        user_id = message.reply_to_message.from_user.id
+        user_first_name = message.reply_to_message.from_user.first_name
+
+    elif len(message.command) > 1:
+        if (
+            len(message.entities) > 1 and
+            message.entities[1].type == enums.MessageEntityType.TEXT_MENTION
+        ):
+            required_entity = message.entities[1]
+            user_id = required_entity.user.id
+            user_first_name = required_entity.user.first_name
+        else:
+            user_id = message.command[1]
+            user_first_name = user_id
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            pass
+    else:
+        user_id = message.from_user.id
+        user_first_name = message.from_user.first_name
+    return (user_id, user_first_name)
+
+async def stream_site(link, grp_id):
+    try:
+        settings = await get_settings(grp_id) if await get_settings(grp_id) else {}
+        api_key, site_key = ('streamapi', 'streamsite')
+        default_api, default_site = STREAM_API, STREAM_SITE
+        
+        api = settings.get(api_key, default_api)
+        site = settings.get(site_key, default_site)
+
+        shortzy = Shortzy(api, site)
+
+        try:
+            link = await shortzy.convert(link)
+        except Exception:
+            link = await shortzy.get_quick_link(link)
+        return link
+    except Exception as e:
+        logger.error(e)
+
+async def get_shortlink(link, grp_id, is_second_shortener=False, is_third_shortener=False):
+    settings = await get_settings(grp_id) if await get_settings(grp_id) else {}
+    if is_third_shortener:
+        api_key, site_key = ('verify_api3', 'verify_3')
+        default_api, default_site = VERIFY_API3, VERIFY_URL3
+    elif is_second_shortener:
+        api_key, site_key = ('verify_api2', 'verify_2')
+        default_api, default_site = VERIFY_API2, VERIFY_URL2
+    else:
+        api_key, site_key = ('verify_api', 'verify')
+        default_api, default_site = VERIFY_API, VERIFY_URL
+
+    api = settings.get(api_key, default_api)
+    site = settings.get(site_key, default_site)
+    shortzy = Shortzy(api, site)
+    try:
+        link = await shortzy.convert(link)
+    except Exception:
+        link = await shortzy.get_quick_link(link)
+    return link
+
+async def get_users():
+    count  = await user_col.count_documents({})
+    cursor = user_col.find({})
+    list   = await cursor.to_list(length=int(count))
+    return count, list
+
+async def get_text(settings, remaining_seconds, files, query, total_results, search):
+    try:
+        if settings["imdb"]:
+            IMDB_CAP = temp.IMDB_CAP.get(query.from_user.id)
+            CAPTION = f"☠️ ᴛɪᴛʟᴇ : <code>{search}</code>\n📂 ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ : <code>{total_results}</code>\n📝 ʀᴇǫᴜᴇsᴛᴇᴅ ʙʏ : {query.from_user.first_name}\n⏰ ʀᴇsᴜʟᴛ ɪɴ : <code>{remaining_seconds} Sᴇᴄᴏɴᴅs</code>\n\n</b>"
+            if IMDB_CAP:
+                cap = IMDB_CAP
+                for file in files:
+                    cap += f"\n\n<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{query.message.chat.id}_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {file.file_name}</a></b>"
+            else:
+                imdb = await get_poster(search, file=(files[0]).file_name) if settings["imdb"] else None
+                if imdb:
+                    TEMPLATE = script.IMDB_TEMPLATE_TXT
+                    cap = TEMPLATE.format(
+                        qurey=search,
+                        title=imdb['title'],
+                        votes=imdb['votes'],
+                        aka=imdb["aka"],
+                        seasons=imdb["seasons"],
+                        box_office=imdb['box_office'],
+                        localized_title=imdb['localized_title'],
+                        kind=imdb['kind'],
+                        imdb_id=imdb["imdb_id"],
+                        cast=imdb["cast"],
+                        runtime=imdb["runtime"],
+                        countries=imdb["countries"],
+                        certificates=imdb["certificates"],
+                        languages=imdb["languages"],
+                        director=imdb["director"],
+                        writer=imdb["writer"],
+                        producer=imdb["producer"],
+                        composer=imdb["composer"],
+                        cinematographer=imdb["cinematographer"],
+                        music_team=imdb["music_team"],
+                        distributors=imdb["distributors"],
+                        release_date=imdb['release_date'],
+                        year=imdb['year'],
+                        genres=imdb['genres'],
+                        poster=imdb['poster'],
+                        plot=imdb['plot'],
+                        rating=imdb['rating'],
+                        url=imdb['url'],
+                        **locals()
+                    )
+                    for file in files:
+                        cap += f"\n\n<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{query.message.chat.id}_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {file.file_name}</a></b>"
+                else:
+                    cap = f"{CAPTION}"
+                    cap+="<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
+                    for file in files:
+                        cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{query.message.chat.id}_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {file.file_name}\n\n</a></b>"
+        else:
+            cap = f"☠️ ᴛɪᴛʟᴇ : <code>{search}</code>\n📂 ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ : <code>{total_results}</code>\n📝 ʀᴇǫᴜᴇsᴛᴇᴅ ʙʏ : {query.from_user.first_name}\n⏰ ʀᴇsᴜʟᴛ ɪɴ : <code>{remaining_seconds}\n\n</b>"
+            cap+="<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
+            for file in files:
+                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{query.message.chat.id}_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {file.file_name}\n\n</a></b>"
+        return cap
+    except Exception as e:
+        await query.answer(f"{e}", show_alert=True)
+        return cap
