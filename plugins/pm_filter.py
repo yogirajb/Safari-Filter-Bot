@@ -2536,7 +2536,7 @@ async def advantage_spell_chok(client, message):
     user = message.from_user.id if message.from_user else 0
     settings = await get_settings(chat_id)
     
-    # 1. Clean Query
+    # 1. Clean query
     clean_q = re.sub(
         r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
         "", search, flags=re.IGNORECASE
@@ -2544,7 +2544,22 @@ async def advantage_spell_chok(client, message):
     clean_q = re.sub(r"[:\-_]", " ", clean_q)
     clean_q = " ".join(clean_q.split()).strip()
 
-    # 2. TMDb Search for real movie names
+    # 2. Get Real Spelling Correction from Google
+    corrected_q = await get_spell_correction(clean_q)
+    
+    # Agar Google se correct spelling mil gayi (e.g. 'Pushpa')
+    # toh check karo ki kya DB me iske files hain
+    if corrected_q:
+        files, offset, total_results = await get_search_results(chat_id, corrected_q, offset=0, filter=True)
+        if files:
+            # Agar file DB me maujood hai, toh user ko batakar direct auto-filter run kar do
+            st = await message.reply(f"<b>Did you mean <code>{corrected_q}</code>? Searching...</b>")
+            await asyncio.sleep(1.5)
+            await st.delete()
+            message.text = corrected_q
+            return await auto_filter(client, message)
+
+    # 3. Agar direct match na ho toh TMDb se options laao
     api_key = TMDB_API_KEY
     if not api_key:
         try:
@@ -2553,41 +2568,52 @@ async def advantage_spell_chok(client, message):
         except Exception:
             pass
 
+    queries_to_search = []
+    if corrected_q:
+        queries_to_search.append(corrected_q)
+    queries_to_search.append(clean_q)
+
     valid_movies = []
     seen_titles = set()
 
     if api_key:
         try:
             async with aiohttp.ClientSession() as session:
-                params = {
-                    "api_key": api_key,
-                    "query": clean_q,
-                    "include_adult": "false"
-                }
-                async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=6) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        results = data.get("results", [])
-                        # Sort by popularity taaki popular movies sabse upar rahein
-                        results.sort(key=lambda x: (x.get("vote_count", 0), x.get("popularity", 0)), reverse=True)
-                        for item in results:
-                            m_title = item.get("title") or item.get("name")
-                            m_id = item.get("id")
-                            if m_title and m_title.strip():
-                                clean_m_title = m_title.strip()
-                                if clean_m_title.lower() not in seen_titles:
-                                    seen_titles.add(clean_m_title.lower())
-                                    valid_movies.append((clean_m_title, m_id))
+                for q_term in queries_to_search:
+                    params = {
+                        "api_key": api_key,
+                        "query": q_term,
+                        "include_adult": "false"
+                    }
+                    async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=6) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            results = data.get("results", [])
+                            # Indian origin aur high popularity ko priority do
+                            results.sort(key=lambda x: (
+                                1 if x.get("original_language") in ["hi", "te", "ta", "ml", "kn"] else 0,
+                                x.get("vote_count", 0),
+                                x.get("popularity", 0)
+                            ), reverse=True)
+
+                            for item in results:
+                                m_title = item.get("title") or item.get("name")
+                                m_id = item.get("id")
+                                if m_title and m_title.strip():
+                                    clean_m_title = m_title.strip()
+                                    if clean_m_title.lower() not in seen_titles:
+                                        seen_titles.add(clean_m_title.lower())
+                                        valid_movies.append((clean_m_title, m_id))
+                    if valid_movies:
+                        break
         except Exception as e:
             logger.error(f"TMDb spell fetch error: {e}")
 
-    # Fallback to Google suggestion agar TMDb se na mile
-    if not valid_movies:
-        corrected_q = await get_spell_correction(clean_q)
-        if corrected_q:
-            valid_movies.append((corrected_q, "0"))
+    # Agar TMDb se na mile toh Google Suggestion ko list me dalo
+    if not valid_movies and corrected_q:
+        valid_movies.append((corrected_q, "0"))
 
-    # Agar bilkul kuch na mile toh Google button
+    # Agar koi match na mile toh Google button dikha do
     if not valid_movies:
         google = search.replace(" ", "+")
         button = [[
@@ -2602,7 +2628,7 @@ async def advantage_spell_chok(client, message):
             pass
         return
 
-    # Top 6 accurate suggestions ke buttons
+    # Maximum 6 accurate suggestions dikhayega
     buttons = [
         [InlineKeyboardButton(text=item[0], callback_data=f"spol#{item[1]}#{user}")]
         for item in valid_movies[:6]
