@@ -30,6 +30,9 @@ from database.ia_filterdb import Media, get_file_details, get_search_results, ge
 from fuzzywuzzy import process
 TIMEZONE = "Asia/Kolkata"
 
+TMDB_API_BASE = "https://api.themoviedb.org/3"
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+
 import logging
 from urllib.parse import quote_plus
 from SAFARI.utils.file_properties import get_name, get_hash, get_media_file_size
