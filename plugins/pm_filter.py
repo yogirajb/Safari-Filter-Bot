@@ -2213,34 +2213,13 @@ async def auto_filter(client, msg, spoll=False):
                         )
                         search = fixed  # ab aage sab isi se chalega
 
-                # Agar ab bhi files nahi mile → purana AI spell system
+                # Agar files nahi mili toh seedha spell check suggestion par bhejo
                 if not files:
                     await m.delete()
-                    if settings["spell_check"]:
-                        ai_sts = await message.reply_sticker(
-                            sticker="CAACAgQAAxkBAAEq2R9mipkiW9ACyj7oQXznwKTPHqNCXQACkBUAA3mRUZGx4GwLX9XCHgQ"
-                        )
-                        st = await message.reply('<b>Ai is Cheking For Your Spelling. Please Wait.</b>')
-                        is_misspelled = await ai_spell_check(
-                            chat_id=message.chat.id,
-                            wrong_name=search
-                        )
-                        if is_misspelled:
-                            await st.edit(
-                                f'<b>Ai Suggested <code>{is_misspelled}</code> name\nSo Im Searching for <code>{is_misspelled}</code></b>'
-                            )
-                            await asyncio.sleep(2)
-                            msg.text = is_misspelled
-                            await ai_sts.delete()
-                            await st.delete()
-                            return await auto_filter(client, msg)
-                        await ai_sts.delete()
-                        await st.delete()
-                        return await advantage_spell_chok(client, msg)
+                    if settings.get("spell_check", True):
+                        return await advantage_spell_chok(client, message)
                     else:
                         return
-            else:
-                return
 
         else:
             # callback se aaye hue spell poll ka case
