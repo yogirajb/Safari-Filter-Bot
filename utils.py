@@ -199,8 +199,16 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                     search_year = m[-1]
                     q = re.sub(r"\b(19\d\d|20\d\d)\b", "", q).strip()
 
-            clean_q = re.sub(r"\[.*?\]|\(.*?\)", " ", q)
-            clean_q = re.sub(r"[:\-_]", " ", clean_q)
+                        # 1. Series / Episode check aur Query Clean
+            is_series_file = False
+            file_and_q = f"{file or ''} {q}".lower()
+            if re.search(r"\b(season|s\d+|episode|ep\d+|e\d+|serial|drama|series)\b", file_and_q):
+                is_series_file = True
+
+            # TV Show ke naam se S01, E252, Season 1 jaisi cheezein hatayein taaki clean title search ho
+            clean_q = re.sub(r"(?i)\b(s\d+|e\d+|season\s*\d+|episode\s*\d+)\b", " ", q)
+            clean_q = re.sub(r"\[.*?\]|\(.*?\)", " ", clean_q)
+            clean_q = re.sub(r"[:\-_.]", " ", clean_q)
             clean_q = " ".join(clean_q.split()).strip()
 
             queries_to_try = [clean_q]
@@ -210,33 +218,22 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             if len(words) > 2:
                 queries_to_try.append(" ".join(words[:2]))
 
-            # 2. Check content category: Series, Regional, Dubbed
-            is_series_file = False
-            file_and_q = f"{file or ''} {q}".lower()
-            if re.search(r"\b(season|s\d+|episode|ep\d+|e\d+|serial|drama|series)\b", file_and_q):
-                is_series_file = True
-
-            # Regional Languages & Dubbed Detection
-            is_indian_tagged = bool(re.search(r"\b(hindi|hin|tamil|tam|telugu|tel|malayalam|mal|kannada|kan|bengali|marathi|punjabi|dubbed|dub|dual|multi|south)\b", file_and_q))
-
             results = []
             if TMDB_API_KEY:
                 async with aiohttp.ClientSession() as session:
                     for q_str in queries_to_try:
-                        endpoint = "tv" if is_series_file else "multi"
+                        # TV serial hai toh strictly tv endpoint hi chalega!
+                        endpoint = "tv" if is_series_file else "movie"
                         params = {"api_key": TMDB_API_KEY, "query": q_str, "include_adult": "false"}
-                        
-                        if search_year:
-                            if is_series_file:
-                                params["first_air_date_year"] = int(search_year)
-                            else:
-                                params["year"] = int(search_year)
 
                         async with session.get(f"{TMDB_API_BASE}/search/{endpoint}", params=params, timeout=8) as resp:
                             if resp.status == 200:
                                 data = await resp.json()
-                                res_list = [r for r in data.get("results", []) if r.get("media_type", endpoint) in ["movie", "tv"]]
+                                res_list = [r for r in data.get("results", [])]
                                 if res_list:
+                                    # Media type explicitly set karein
+                                    for r in res_list:
+                                        r["media_type"] = endpoint
                                     results = res_list
                                     break
                         
