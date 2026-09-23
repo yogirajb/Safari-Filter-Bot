@@ -2516,7 +2516,7 @@ async def advantage_spell_chok(client, message):
     user = message.from_user.id if message.from_user else 0
     settings = await get_settings(chat_id)
     
-    # 1. Query Clean
+    # 1. Clean Query: Faltu words, punctuation aur symbols hatayein
     clean_q = re.sub(
         r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
         "", search, flags=re.IGNORECASE
@@ -2527,7 +2527,7 @@ async def advantage_spell_chok(client, message):
     # 2. Google Suggestion se accurate spelling fetch karein
     corrected_q = await get_spell_correction(clean_q)
     
-    # Agar Google se spelling theek ho gayi aur file DB me hai toh direct auto-filter
+    # Agar Google se spelling theek ho gayi aur file DB me hai toh direct auto_filter run karein
     if corrected_q:
         files, offset, total_results = await get_search_results(chat_id, corrected_q, offset=0, filter=True)
         if files:
@@ -2537,7 +2537,7 @@ async def advantage_spell_chok(client, message):
             message.text = corrected_q
             return await auto_filter(client, message)
 
-    # 3. TMDb Multi-Search (Movies + TV Shows only, NO ACTORS/PERSONS)
+    # 3. TMDb Multi-Search (Movies + TV Shows only, Strictly NO PERSONS)
     api_key = TMDB_API_KEY
     if not api_key:
         try:
@@ -2549,7 +2549,8 @@ async def advantage_spell_chok(client, message):
     queries_to_search = []
     if corrected_q:
         queries_to_search.append(corrected_q)
-    queries_to_search.append(clean_q)
+    if clean_q and clean_q != corrected_q:
+        queries_to_search.append(clean_q)
 
     valid_movies = []
     seen_titles = set()
@@ -2568,13 +2569,13 @@ async def advantage_spell_chok(client, message):
                             data = await resp.json()
                             results = data.get("results", [])
 
-                            # Sirf Movies aur TV Shows aayenge, 'person' drop ho jayega
+                            # FILTER: Sirf 'movie' aur 'tv' lenge, 'person' ko drop kar denge
                             filtered_results = [
                                 r for r in results 
                                 if r.get("media_type") in ["movie", "tv"]
                             ]
 
-                            # Indian languages + Popular shows/movies upar layein
+                            # Popularity aur Indian content ko priority order me layein
                             filtered_results.sort(key=lambda x: (
                                 1 if x.get("original_language") in ["hi", "te", "ta", "ml", "kn"] else 0,
                                 x.get("vote_count", 0),
@@ -2591,7 +2592,7 @@ async def advantage_spell_chok(client, message):
                                     if clean_m_title.lower() not in seen_titles:
                                         seen_titles.add(clean_m_title.lower())
                                         
-                                        # Agar TV show hai toh button text me (TV Show) tag aayega
+                                        # Display name formatting
                                         display_title = f"{clean_m_title} (TV Show)" if m_type == "tv" else clean_m_title
                                         valid_movies.append((display_title, clean_m_title, m_id))
 
@@ -2600,11 +2601,11 @@ async def advantage_spell_chok(client, message):
         except Exception as e:
             logger.error(f"TMDb spell fetch error: {e}")
 
-    # Fallback to Google suggestion
+    # Fallback: Agar TMDb khali ho lekin Google Suggestion mila ho
     if not valid_movies and corrected_q:
         valid_movies.append((corrected_q, corrected_q, "0"))
 
-    # Agar koi suggestion na mile
+    # Agar bilkul koi result na mile toh Google Button
     if not valid_movies:
         google = search.replace(" ", "+")
         button = [[
@@ -2619,7 +2620,7 @@ async def advantage_spell_chok(client, message):
             pass
         return
 
-    # Maximum 6 suggestions (Movies + Web Series dono)
+    # Maximum 6 accurate suggestion buttons
     buttons = [
         [InlineKeyboardButton(text=item[0], callback_data=f"spol#{item[2]}#{user}")]
         for item in valid_movies[:6]
