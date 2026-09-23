@@ -60,48 +60,23 @@ class temp(object):
 
 def ai_fix_query(query: str) -> str:
     try:
-        if not TMDB_API_KEY:
-            return query
-
         query = (query or "").strip()
         if len(query) < 3:
             return query
 
-        year = None
-        m = re.findall(r"[1-2]\d{3}$", query)
-        if m:
-            year = m[0]
-            title = query.replace(year, "").strip()
-        else:
-            title = query
-
-        params = {
-            "api_key": TMDB_API_KEY,
-            "query": title,
-            "include_adult": False,
-        }
-        if year:
-            params["year"] = int(year)
-
-        r = requests.get(f"{TMDB_API_BASE}/search/movie", params=params, timeout=10)
-        if r.status_code != 200:
-            return query
-
-        data = r.json()
-        results = data.get("results") or []
-        if not results:
-            return query
-
-        best = results[0]
-        fixed_title = best.get("title") or best.get("name")
-        release_date = (best.get("release_date") or "")[:4]
-
-        if not fixed_title:
-            return query
-
-        if release_date:
-            return f"{fixed_title} {release_date}"
-        return fixed_title
+        # Google Suggestion for real-time spell auto-correction
+        url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={requests.utils.quote(query)}"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        res = requests.get(url, headers=headers, timeout=3)
+        if res.status_code == 200:
+            data = res.json()
+            if data and len(data) > 1 and data[1]:
+                for item in data[1]:
+                    cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
+                    cleaned = " ".join(cleaned.split())
+                    if cleaned and cleaned.lower() != query.lower():
+                        return cleaned
+        return query
     except Exception:
         return query
 
@@ -274,17 +249,19 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                                         results = res_list
                                         break
 
-            if bulk and results:
-                movies = []
-                for res in results[:10]:
-                    movies.append(
-                        SimpleNamespace(
-                            movieID=res.get("id"),
-                            get=lambda key, r=res: r.get(key),
-                            title=res.get("title") or res.get("name"),
+            if bulk:
+                if results:
+                    movies = []
+                    for res in results[:10]:
+                        movies.append(
+                            SimpleNamespace(
+                                movieID=res.get("id"),
+                                get=lambda key, r=res: r.get(key),
+                                title=res.get("title") or res.get("name"),
+                            )
                         )
-                    )
-                return movies
+                    return movies
+                return []
 
             best_match = None
             if results:
