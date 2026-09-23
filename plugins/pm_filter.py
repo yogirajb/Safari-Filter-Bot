@@ -2088,27 +2088,62 @@ async def cb_handler(client: Client, query: CallbackQuery):
     await query.answer(MSG_ALRT)
 
 async def ai_spell_check(chat_id, wrong_name):
-    try:  
-        async def search_movie(wrong_name):
-            search_results = imdb.search_movie(wrong_name)
-            movie_list = [movie['title'] for movie in search_results]
-            return movie_list
-        movie_list = await search_movie(wrong_name)
+    """
+    TMDb based accurate spell suggestions and auto-DB match
+    """
+    try:
+        clean_q = str(wrong_name or "").strip()
+        if len(clean_q) < 2:
+            return None
+
+        # Clean non-alphanumeric noise
+        clean_q = re.sub(r"\[.*?\]|\(.*?\)", " ", clean_q)
+        clean_q = re.sub(r"[:\-_]", " ", clean_q)
+        clean_q = " ".join(clean_q.split()).strip()
+
+        api_key = TMDB_API_KEY
+        if not api_key:
+            try:
+                from info import TMDB_API_KEY as info_key
+                api_key = info_key
+            except Exception:
+                pass
+
+        movie_list = []
+        if api_key:
+            async with aiohttp.ClientSession() as session:
+                params = {
+                    "api_key": api_key,
+                    "query": clean_q,
+                    "include_adult": "false"
+                }
+                async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=6) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        res = data.get("results", [])
+                        # High popularity/vote movies top par layega
+                        res.sort(key=lambda x: (x.get("vote_count", 0), x.get("popularity", 0)), reverse=True)
+                        for item in res:
+                            name = item.get("title") or item.get("name")
+                            if name and name not in movie_list:
+                                movie_list.append(name)
+
         if not movie_list:
-            return
-        for _ in range(5):
-            closest_match = process.extractOne(wrong_name, movie_list)
-            if not closest_match or closest_match[1] <= 80:
-                return 
-            movie = closest_match[0]
+            return None
+
+        # Bot ke DB me check karega ki suggestion wali movie available hai ya nahi
+        for movie in movie_list[:5]:
             files, offset, total_results = await get_search_results(chat_id=chat_id, query=movie)
             if files:
                 return movie
-            movie_list.remove(movie)
-        return
+
+        # Agar DB me exact match na mile toh sabse top popular title return karega
+        return movie_list[0] if movie_list else None
+
     except Exception as e:
-        print('Got error while searching movie in ai_spell_check', e)
-        
+        logger.error(f"Error in ai_spell_check: {e}")
+        return None
+
 async def auto_filter(client, msg, spoll=False):
     try:
         curr_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
