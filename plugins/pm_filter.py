@@ -2488,25 +2488,49 @@ async def auto_filter(client, msg, spoll=False):
         return
 
 async def get_spell_correction(query):
-    """Google Suggest API with safe JSON decode"""
+    """Multi-Engine Auto-Correction (Datacenter & Cloud Proof)"""
+    clean_query = query.strip()
+    if len(clean_query) < 2:
+        return None
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "*/*"
+    }
+
+    # 1. Google Complete Suggest (Toolbar Client - No Cloud Block)
     try:
-        url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={quote_plus(query)}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
+        url = f"https://suggestqueries.google.com/complete/search?client=toolbar&q={quote_plus(clean_query)}"
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as resp:
                 if resp.status == 200:
                     text_data = await resp.text()
-                    data = json.loads(text_data)
+                    # XML parse suggestion
+                    matches = re.findall(r'<suggestion data="([^"]+)"', text_data)
+                    for item in matches:
+                        cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
+                        cleaned = " ".join(cleaned.split())
+                        if cleaned and cleaned.lower() != clean_query.lower():
+                            return cleaned
+    except Exception as e:
+        logger.error(f"Google Toolbar Suggest Error: {e}")
+
+    # 2. DuckDuckGo Auto-Correct Fallback (Free & 100% Reliable on Koyeb)
+    try:
+        ddg_url = f"https://duckduckgo.com/ac/?q={quote_plus(clean_query)}&type=list"
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(ddg_url, timeout=aiohttp.ClientTimeout(total=3)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
                     if data and len(data) > 1 and data[1]:
                         for item in data[1]:
                             cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
                             cleaned = " ".join(cleaned.split())
-                            if cleaned and cleaned.lower() != query.lower():
+                            if cleaned and cleaned.lower() != clean_query.lower():
                                 return cleaned
     except Exception as e:
-        logger.error(f"Google Suggest Error: {e}")
+        logger.error(f"DuckDuckGo Suggest Error: {e}")
+
     return None
 
 async def advantage_spell_chok(client, message):
@@ -2524,29 +2548,10 @@ async def advantage_spell_chok(client, message):
     clean_q = re.sub(r"[:\-_]", " ", clean_q)
     clean_q = " ".join(clean_q.split()).strip()
 
-    # 2. Google Suggestion API (Real Auto-Correction: Puspa -> Pushpa)
-    corrected_q = None
-    try:
-        g_url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={quote_plus(clean_q)}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(g_url, timeout=4) as resp:
-                if resp.status == 200:
-                    text_resp = await resp.text()
-                    g_data = json.loads(text_resp)
-                    if g_data and len(g_data) > 1 and g_data[1]:
-                        for itm in g_data[1]:
-                            cleaned_itm = re.sub(r"(?i)\b(movie|film|full movie|download|hindi|tamil|telugu|watch online)\b", "", itm).strip()
-                            cleaned_itm = " ".join(cleaned_itm.split())
-                            if cleaned_itm and cleaned_itm.lower() != clean_q.lower():
-                                corrected_q = cleaned_itm
-                                break
-    except Exception as e:
-        logger.error(f"Google Suggest Fetch Error: {e}")
+    # 2. Multi-engine Auto Correction (Puspa -> Pushpa)
+    corrected_q = await get_spell_correction(clean_q)
 
-    # Agar Google se correct spelling mil gayi aur DB mein file hai toh direct bhej do
+    # Agar spelling correct ho gayi aur file DB mein hai toh seedha search karo
     if corrected_q:
         files, offset, total_results = await get_search_results(chat_id, corrected_q, offset=0, filter=True)
         if files:
@@ -2559,7 +2564,7 @@ async def advantage_spell_chok(client, message):
     valid_movies = []
     seen_titles = set()
 
-    # Google Suggestion ko BUTTONS mein Sabse Pehla Number do
+    # Google/DuckDuckGo Suggestion ko BUTTONS mein Sabse Pehla Number do
     if corrected_q:
         seen_titles.add(corrected_q.lower())
         valid_movies.append((corrected_q, corrected_q, "0"))
@@ -2573,7 +2578,6 @@ async def advantage_spell_chok(client, message):
         except Exception:
             pass
 
-    # TMDb me pehle Google ka corrected query search hoga (e.g. Pushpa)
     queries_to_search = []
     if corrected_q:
         queries_to_search.append(corrected_q)
@@ -2598,9 +2602,9 @@ async def advantage_spell_chok(client, message):
                                 if r.get("media_type") in ["movie", "tv"]
                             ]
 
-                            # Indian Languages + High Popularity ko TOP par lao
+                            # Prioritize Indian Languages and high-popularity content
                             filtered_results.sort(key=lambda x: (
-                                1 if x.get("original_language") in ["hi", "te", "ta", "ml", "kn"] else 0,
+                                2 if x.get("original_language") in ["hi", "te", "ta", "ml", "kn"] else (1 if x.get("original_language") == "en" else 0),
                                 x.get("vote_count", 0),
                                 x.get("popularity", 0)
                             ), reverse=True)
@@ -2609,7 +2613,12 @@ async def advantage_spell_chok(client, message):
                                 m_title = item.get("title") or item.get("name")
                                 m_id = item.get("id")
                                 m_type = item.get("media_type", "movie")
+                                orig_lang = item.get("original_language", "")
                                 
+                                # Indonesian / irrelevant zero-popularity titles ignore karo
+                                if orig_lang == "id" and item.get("vote_count", 0) < 50:
+                                    continue
+
                                 if m_title and m_title.strip():
                                     clean_m_title = m_title.strip()
                                     if clean_m_title.lower() not in seen_titles:
@@ -2617,7 +2626,6 @@ async def advantage_spell_chok(client, message):
                                         display_title = f"{clean_m_title} (TV Show)" if m_type == "tv" else clean_m_title
                                         valid_movies.append((display_title, clean_m_title, m_id))
 
-                    # Agar Pushpa se Indian / popular results mil gaye toh aage loop mat chalao
                     if len(valid_movies) > 1 and corrected_q:
                         break
         except Exception as e:
