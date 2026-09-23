@@ -370,9 +370,9 @@ async def media(bot, message):
             # -------------------------------------------------------------
             imdb_info = None
             try:
-                imdb_info = await get_poster(clean_title, year=extracted_year, file=raw_name)[span_0](start_span)[span_0](end_span)
+                imdb_info = await get_poster(clean_title, year=extracted_year, file=raw_name)
                 if not imdb_info and extracted_year:
-                    imdb_info = await get_poster(clean_title, year=None, file=raw_name)[span_1](start_span)[span_1](end_span)
+                    imdb_info = await get_poster(clean_title, year=None, file=raw_name)
             except Exception as e:
                 logging.error(f"Error fetching Poster: {e}")
 
