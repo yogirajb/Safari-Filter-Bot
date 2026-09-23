@@ -206,25 +206,23 @@ async def broadcast_messages(user_id, message):
 
 async def get_poster(query, bulk=False, id=False, file=None, year=None):
     """
-    TMDb + IMDb (Cinemagoer) Smart Search Engine.
-    Smartly distinguishes Indian vs Hollywood/Dubbed movies and TV serials.
+    Bulletproof TMDb + IMDb (Cinemagoer) Smart Search Engine.
     """
     try:
         media_type = "movie"
-        q = (query or "").strip()
-        search_year = year
+        q = str(query or "").strip()
+        search_year = str(year).strip() if year else None
 
         if not id:
+            if not search_year and file:
+                m = re.findall(r"\b(19\d\d|20\d\d)\b", str(file))
+                if m:
+                    search_year = m[-1]
             if not search_year:
-                if file is not None:
-                    m = re.findall(r"\b(19\d\d|20\d\d)\b", str(file))
-                    if m:
-                        search_year = m[-1]
-                if not search_year:
-                    m = re.findall(r"\b(19\d\d|20\d\d)\b", q)
-                    if m:
-                        search_year = m[-1]
-                        q = re.sub(r"\b(19\d\d|20\d\d)\b", "", q).strip()
+                m = re.findall(r"\b(19\d\d|20\d\d)\b", q)
+                if m:
+                    search_year = m[-1]
+                    q = re.sub(r"\b(19\d\d|20\d\d)\b", "", q).strip()
 
             clean_q = re.sub(r"\[.*?\]|\(.*?\)", " ", q)
             clean_q = re.sub(r"[:\-_]", " ", clean_q)
@@ -246,31 +244,32 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             if TMDB_API_KEY:
                 async with aiohttp.ClientSession() as session:
                     for q_str in queries_to_try:
-                        if is_series_file:
-                            tv_params = {"api_key": TMDB_API_KEY, "query": q_str, "include_adult": "false"}
-                            if search_year:
-                                tv_params["first_air_date_year"] = int(search_year)
-                            async with session.get(f"{TMDB_API_BASE}/search/tv", params=tv_params, timeout=8) as resp:
+                        endpoint = "tv" if is_series_file else "multi"
+                        params = {"api_key": TMDB_API_KEY, "query": q_str, "include_adult": "false"}
+                        
+                        # Multi endpoint supports 'year', tv endpoint supports 'first_air_date_year'
+                        if search_year:
+                            if is_series_file:
+                                params["first_air_date_year"] = int(search_year)
+                            else:
+                                params["year"] = int(search_year)
+
+                        async with session.get(f"{TMDB_API_BASE}/search/{endpoint}", params=params, timeout=8) as resp:
+                            if resp.status == 200:
+                                data = await resp.json()
+                                res_list = [r for r in data.get("results", []) if r.get("media_type", endpoint) in ["movie", "tv"]]
+                                if res_list:
+                                    results = res_list
+                                    break
+                        
+                        # Fallback: Agar saal ke saath result na mile, toh saal hata kar dhoondega
+                        if not results and search_year:
+                            params.pop("year", None)
+                            params.pop("first_air_date_year", None)
+                            async with session.get(f"{TMDB_API_BASE}/search/{endpoint}", params=params, timeout=8) as resp:
                                 if resp.status == 200:
                                     data = await resp.json()
-                                    res_list = data.get("results", [])
-                                    if res_list:
-                                        for r in res_list:
-                                            r["media_type"] = "tv"
-                                        results = res_list
-                                        break
-                        else:
-                            params = {"api_key": TMDB_API_KEY, "query": q_str, "include_adult": "false"}
-                            if search_year:
-                                try:
-                                    params["year"] = int(search_year)
-                                    params["primary_release_year"] = int(search_year)
-                                except ValueError:
-                                    pass
-                            async with session.get(f"{TMDB_API_BASE}/search/multi", params=params, timeout=8) as resp:
-                                if resp.status == 200:
-                                    data = await resp.json()
-                                    res_list = [r for r in data.get("results", []) if r.get("media_type") in ["movie", "tv"]]
+                                    res_list = [r for r in data.get("results", []) if r.get("media_type", endpoint) in ["movie", "tv"]]
                                     if res_list:
                                         results = res_list
                                         break
@@ -293,14 +292,12 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                 is_explicit_dub = bool(re.search(r"\b(dubbed|dub|dual|multi)\b", file_str))
                 has_hindi_tag = bool(re.search(r"\b(hindi|hin)\b", file_str))
 
-                # 1. TV Series Priority
                 if is_series_file:
                     for r in results:
                         if r.get("media_type") == "tv":
                             best_match = r
                             break
 
-                # 2. Year Matching with Smart Language vs Popularity
                 if not best_match and search_year:
                     year_matched = []
                     for r in results:
@@ -310,18 +307,15 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                             year_matched.append(r)
 
                     if year_matched:
-                        # Case A: Agar file me Hindi hai aur Dubbed/Dual nahi hai (Bollywood priority)
                         if has_hindi_tag and not is_explicit_dub:
                             for r in year_matched:
                                 if r.get("original_language") in ["hi", "ta", "te", "mr", "bn", "ml"]:
                                     best_match = r
                                     break
-                        # Case B: Agar Hollywood film hai ya Dubbed hai (Highest vote/popularity priority)
                         if not best_match:
                             year_matched.sort(key=lambda x: (x.get("vote_count", 0), x.get("popularity", 0)), reverse=True)
                             best_match = year_matched[0]
 
-                # 3. Exact Title Match
                 if not best_match:
                     for r in results:
                         r_title = (r.get("title") or r.get("name") or "").strip().lower()
@@ -329,7 +323,6 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                             best_match = r
                             break
 
-                # 4. Final Fallback: Sort by votes/popularity
                 if not best_match:
                     results.sort(key=lambda x: (x.get("vote_count", 0), x.get("popularity", 0)), reverse=True)
                     best_match = results[0]
@@ -344,7 +337,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             media_type = "movie"
 
         # -------------------------------------------------------------
-        # 1. TMDb Detail Retrieval
+        # 1. TMDb Details Retrieval
         # -------------------------------------------------------------
         if movie_id and TMDB_API_KEY:
             params = {
@@ -362,7 +355,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             if movie and movie.get("success") is not False:
                 title = movie.get("title") or movie.get("name")
                 release_date = movie.get("release_date") or movie.get("first_air_date") or ""
-                movie_year = release_date[:4] if release_date else (str(year) if year else "N/A")
+                movie_year = release_date[:4] if release_date else (str(search_year) if search_year else "N/A")
 
                 images = movie.get("images", {})
                 posters = images.get("posters", [])
@@ -382,7 +375,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
 
                 poster_url = f"{TMDB_IMG_BASE}{poster_path}" if poster_path else None
                 overview = movie.get("overview") or "No description available for this content."
-                genres = ", ".join([g.get("name") for g in movie.get("genres", [])]) or "Drama, Family"
+                genres = ", ".join([g.get("name") for g in movie.get("genres", [])]) or "Drama, Action"
                 countries = ", ".join([c.get("name") for c in movie.get("production_countries", [])]) or "India"
                 languages = ", ".join([l.get("english_name") for l in movie.get("spoken_languages", [])]) or "Hindi"
                 rating = movie.get("vote_average", "0.0")
@@ -407,7 +400,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                     "kind": media_type,
                     "imdb_id": imdb_id or f"tmdb-{movie_id}",
                     "cast": cast,
-                    "runtime": str(movie.get("runtime") or (movie.get("episode_run_time", [None])[0] if movie.get("episode_run_time") else "N/A")),
+                    "runtime": str(movie.get("runtime") or "N/A"),
                     "countries": countries,
                     "certificates": "N/A",
                     "languages": languages,
@@ -428,74 +421,68 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                 }
 
         # -------------------------------------------------------------
-        # 2. IMDb (Cinemagoer) Fallback
+        # 2. Cinemagoer Fallback
         # -------------------------------------------------------------
         loop = asyncio.get_running_loop()
         search_results = None
         for q_try in queries_to_try:
-            search_results = await loop.run_in_executor(None, imdb.search_movie, q_try)
-            if search_results:
-                break
+            try:
+                search_results = await loop.run_in_executor(None, imdb.search_movie, q_try)
+                if search_results:
+                    break
+            except Exception:
+                pass
 
         if not search_results:
             return None
 
-        best_imdb = None
-        for item in search_results:
-            kind = item.get("kind", "")
-            if is_series_file and kind in ["tv series", "tv mini series", "episode"]:
-                best_imdb = item
-                break
-            elif not is_series_file and kind in ["movie", "tv movie"]:
-                best_imdb = item
-                break
+        best_imdb = search_results[0]
+        try:
+            full_movie = await loop.run_in_executor(None, imdb.get_movie, best_imdb.movieID)
+            plot_list = full_movie.get("plot", [])
+            raw_plot = plot_list[0] if plot_list else full_movie.get("plot outline", "No description available for this content.")
+            if "::" in raw_plot:
+                raw_plot = raw_plot.split("::")[0]
 
-        if not best_imdb:
-            best_imdb = search_results[0]
+            cast_list = [c.get("name") for c in full_movie.get("cast", [])][:10] if full_movie.get("cast") else []
+            directors = [d.get("name") for d in full_movie.get("director", [])] if full_movie.get("director") else []
+            writers = [w.get("name") for w in full_movie.get("writer", [])] if full_movie.get("writer") else []
 
-        full_movie = await loop.run_in_executor(None, imdb.get_movie, best_imdb.movieID)
-        plot_list = full_movie.get("plot", [])
-        raw_plot = plot_list[0] if plot_list else full_movie.get("plot outline", "No description available for this content.")
-        if "::" in raw_plot:
-            raw_plot = raw_plot.split("::")[0]
-
-        cast_list = [c.get("name") for c in full_movie.get("cast", [])][:10]
-        directors = [d.get("name") for d in full_movie.get("director", [])]
-        writers = [w.get("name") for w in full_movie.get("writer", [])]
-
-        return {
-            "title": full_movie.get("title"),
-            "votes": str(full_movie.get("votes", "N/A")),
-            "aka": "N/A",
-            "seasons": str(full_movie.get("number of seasons", "N/A")),
-            "box_office": "N/A",
-            "localized_title": full_movie.get("title"),
-            "kind": full_movie.get("kind", "tv series" if is_series_file else "movie"),
-            "imdb_id": f"tt{best_imdb.movieID}",
-            "cast": ", ".join(cast_list) or "N/A",
-            "runtime": str(full_movie.get("runtimes", ["N/A"])[0]),
-            "countries": ", ".join(full_movie.get("countries", ["India"])),
-            "certificates": "N/A",
-            "languages": ", ".join(full_movie.get("languages", ["Hindi"])),
-            "director": ", ".join(directors) or "N/A",
-            "writer": ", ".join(writers) or "N/A",
-            "producer": "N/A",
-            "composer": "N/A",
-            "cinematographer": "N/A",
-            "music_team": "N/A",
-            "distributors": "N/A",
-            "release_date": str(full_movie.get("year", "N/A")),
-            "year": str(full_movie.get("year", search_year or "N/A")),
-            "genres": ", ".join(full_movie.get("genres", ["Drama"])),
-            "poster": full_movie.get("full-size cover url") or full_movie.get("cover url"),
-            "plot": raw_plot,
-            "rating": str(full_movie.get("rating", "0.0")),
-            "url": f"https://www.imdb.com/title/tt{best_imdb.movieID}",
-        }
+            return {
+                "title": full_movie.get("title", clean_q),
+                "votes": str(full_movie.get("votes", "N/A")),
+                "aka": "N/A",
+                "seasons": str(full_movie.get("number of seasons", "N/A")),
+                "box_office": "N/A",
+                "localized_title": full_movie.get("title", clean_q),
+                "kind": "movie",
+                "imdb_id": f"tt{best_imdb.movieID}",
+                "cast": ", ".join(cast_list) or "N/A",
+                "runtime": "N/A",
+                "countries": "India",
+                "certificates": "N/A",
+                "languages": "Hindi",
+                "director": ", ".join(directors) or "N/A",
+                "writer": ", ".join(writers) or "N/A",
+                "producer": "N/A",
+                "composer": "N/A",
+                "cinematographer": "N/A",
+                "music_team": "N/A",
+                "distributors": "N/A",
+                "release_date": str(full_movie.get("year", "N/A")),
+                "year": str(full_movie.get("year", search_year or "N/A")),
+                "genres": ", ".join(full_movie.get("genres", ["Drama"])),
+                "poster": full_movie.get("full-size cover url") or full_movie.get("cover url"),
+                "plot": raw_plot,
+                "rating": str(full_movie.get("rating", "0.0")),
+                "url": f"https://www.imdb.com/title/tt{best_imdb.movieID}",
+            }
+        except Exception:
+            return None
 
     except Exception as e:
         logger.error(f"get_poster error: {e}")
-        return None
+        return None 
 
 async def get_settings(group_id):
     settings = temp.SETTINGS.get(group_id)
