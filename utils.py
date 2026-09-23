@@ -205,6 +205,9 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             if re.search(r"\b(season|s\d+|episode|ep\d+|e\d+|serial|drama|series)\b", file_and_q):
                 is_series_file = True
 
+            # Regional Languages & Dubbed Detection (Zaroori for South/Hindi priorities)
+            is_indian_tagged = bool(re.search(r"\b(hindi|hin|tamil|tam|telugu|tel|malayalam|mal|kannada|kan|bengali|marathi|punjabi|dubbed|dub|dual|multi|south)\b", file_and_q))
+
             # TV Show ke naam se S01, E252, Season 1 jaisi cheezein hatayein taaki clean title search ho
             clean_q = re.sub(r"(?i)\b(s\d+|e\d+|season\s*\d+|episode\s*\d+)\b", " ", q)
             clean_q = re.sub(r"\[.*?\]|\(.*?\)", " ", clean_q)
