@@ -64,9 +64,8 @@ def ai_fix_query(query: str) -> str:
         if len(query) < 3:
             return query
 
-        # Google Suggestion for real-time spell auto-correction
         url = f"https://suggestqueries.google.com/complete/search?client=firefox&q={requests.utils.quote(query)}"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        headers = {"User-Agent": "Mozilla/5.0"}
         res = requests.get(url, headers=headers, timeout=3)
         if res.status_code == 200:
             data = res.json()
