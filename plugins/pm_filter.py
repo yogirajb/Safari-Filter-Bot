@@ -2523,6 +2523,7 @@ async def get_spell_correction(query):
                     if data and len(data) > 1 and data[1]:
                         for item in data[1]:
                             cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
+                            cleaned = " ".join(cleaned.split())
                             if cleaned and cleaned.lower() != query.lower():
                                 return cleaned
     except Exception as e:
