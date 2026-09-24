@@ -181,39 +181,31 @@ async def broadcast_messages(user_id, message):
 
 async def fetch_web_poster(show_name):
     """
-    Direct web scraper for Indian TV Serials (No API key / No token required)
+    Direct Cloud CDN image fetcher for Indian TV serials.
+    Never blocked on Koyeb/Cloud IPs.
     """
     try:
         clean_name = re.sub(r"[^a-zA-Z0-9 ]", " ", str(show_name)).strip()
-        search_query = quote_plus(f"{clean_name} hindi serial poster")
-        url = f"https://html.duckduckgo.com/html/?q={search_query}"
+        search_query = f"{clean_name} hindi serial poster"
+        
+        url = "https://tse1.mm.bing.net/th"
+        params = {
+            "q": search_query,
+            "w": "500",
+            "h": "700",
+            "c": "7",
+            "rs": "1",
+            "p": "0"
+        }
         
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
         async with aiohttp.ClientSession(headers=headers) as session:
-            # Step 1: Bing Images JSON Search (Reliable & fast)
-            bing_url = f"https://www.bing.com/images/async?q={search_query}&first=0&count=10&mmasync=1"
-            async with session.get(bing_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                 if resp.status == 200:
-                    text = await resp.text()
-                    # Extract high-res image URLs
-                    matches = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', text)
-                    for img in matches:
-                        clean_img = img.split("?")[0]
-                        if any(clean_img.lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".webp"]):
-                            return img
-
-            # Step 2: Google Images Mobile Fallback
-            g_url = f"https://www.google.com/search?q={search_query}&tbm=isch&tbs=isz:m"
-            async with session.get(g_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                if resp.status == 200:
-                    g_text = await resp.text()
-                    g_matches = re.findall(r'https://encrypted-tbn0\.gstatic\.com/images\?q=tbn:[a-zA-Z0-9_\-]+', g_text)
-                    if g_matches:
-                        return g_matches[0]
-
+                    return str(resp.url)
     except Exception as e:
         logger.error(f"fetch_web_poster error: {e}")
 
