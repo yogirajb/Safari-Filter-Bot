@@ -181,45 +181,42 @@ async def broadcast_messages(user_id, message):
 
 async def fetch_web_poster(show_name):
     """
-    Cloud-safe image fallback for Indian TV serials.
-    Uses DuckDuckGo & Bing (works without API keys and avoids Google captcha).
+    Direct web scraper for Indian TV Serials (No API key / No token required)
     """
     try:
         clean_name = re.sub(r"[^a-zA-Z0-9 ]", " ", str(show_name)).strip()
-        search_query = f"{clean_name} indian serial poster"
+        search_query = quote_plus(f"{clean_name} hindi serial poster")
+        url = f"https://html.duckduckgo.com/html/?q={search_query}"
+        
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": "https://duckduckgo.com/"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
-        # 1. DuckDuckGo Image API
-        ddg_url = f"https://duckduckgo.com/i.js?q={quote_plus(search_query)}&o=json"
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(ddg_url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
-                if resp.status == 200:
-                    try:
-                        data = await resp.json(content_type=None)
-                        results = data.get("results", [])
-                        for img in results[:5]:
-                            img_url = img.get("image")
-                            if img_url and any(img_url.lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".webp"]):
-                                return img_url
-                    except Exception:
-                        pass
-
-        # 2. Bing Images Fallback
-        bing_url = f"https://www.bing.com/images/search?q={quote_plus(search_query)}&FORM=HDRSC2"
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(bing_url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
+            # Step 1: Bing Images JSON Search (Reliable & fast)
+            bing_url = f"https://www.bing.com/images/async?q={search_query}&first=0&count=10&mmasync=1"
+            async with session.get(bing_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                 if resp.status == 200:
                     text = await resp.text()
+                    # Extract high-res image URLs
                     matches = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', text)
-                    for m in matches[:3]:
-                        if any(m.lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".webp"]):
-                            return m
+                    for img in matches:
+                        clean_img = img.split("?")[0]
+                        if any(clean_img.lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".webp"]):
+                            return img
+
+            # Step 2: Google Images Mobile Fallback
+            g_url = f"https://www.google.com/search?q={search_query}&tbm=isch&tbs=isz:m"
+            async with session.get(g_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                if resp.status == 200:
+                    g_text = await resp.text()
+                    g_matches = re.findall(r'https://encrypted-tbn0\.gstatic\.com/images\?q=tbn:[a-zA-Z0-9_\-]+', g_text)
+                    if g_matches:
+                        return g_matches[0]
+
     except Exception as e:
         logger.error(f"fetch_web_poster error: {e}")
-        
+
     return None
 
 async def get_poster(query, bulk=False, id=False, file=None, year=None):
