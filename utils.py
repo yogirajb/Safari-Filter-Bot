@@ -455,6 +455,10 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                 "url": "https://www.themoviedb.org",
             }
 
+        # Agar Series/Serial file hai toh movie fallback par bilkul mat jao
+        if is_series_file:
+            return None
+            
         # MOVIES FALLBACK (Cinemagoer) - Only for Movies
         loop = asyncio.get_running_loop()
         search_results = None
