@@ -405,7 +405,7 @@ async def media(bot, message):
                 genres = imdb_info.get('genres', 'Drama, Action')
                 rating = imdb_info.get('rating', '0.0')
                 # Pehle verified TMDb/Web poster, agar nahi mila toh video ka embedded thumbnail
-                poster_url = imdb_info.get('poster') or file_thumb
+                poster_url = imdb_info.get('poster', None)
                 plot = imdb_info.get('plot', 'No description available for this content.')
                 
                 imdb_lang = imdb_info.get('languages') or imdb_info.get('language')
@@ -417,7 +417,7 @@ async def media(bot, message):
                 year = extracted_year or current_yr
                 rating = "0.0"
                 # Poster na milne par video ka embedded thumbnail
-                poster_url = file_thumb
+                poster_url = None
                 plot = "No description available for this content."
                 final_languages = detected_languages or "Hindi"
 
