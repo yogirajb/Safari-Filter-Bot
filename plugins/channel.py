@@ -9,6 +9,7 @@ from utils import get_poster, get_size, temp
 from difflib import SequenceMatcher
 from datetime import datetime
 import logging
+import os
 import re
 import html
 import asyncio
