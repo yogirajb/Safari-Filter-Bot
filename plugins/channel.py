@@ -462,5 +462,22 @@ async def media(bot, message):
                             reply_markup=post_markup
                         )
                     sent_msg_ids[str(channel)] = msg.id
-                except Exception as e:
-                    lo
+            except Exception as e:
+                    logging.error(f"Error sending post: {e}")
+
+            ACTIVE_POSTS[current_merge_key] = {
+                "msg_ids": sent_msg_ids,
+                "title": title,
+                "genres": genres,
+                "rating": rating,
+                "year": year,
+                "languages": final_languages,
+                "plot": plot,
+                "episodes": set(new_eps),
+                "qualities": set(new_qualities),
+                "is_combined": is_comb,
+                "edited_for_comb": False
+            }
+
+    except Exception as e:
+        logging.error(f"Auto post execution error: {e}")
