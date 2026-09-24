@@ -181,12 +181,13 @@ async def broadcast_messages(user_id, message):
 
 async def fetch_web_poster(show_name):
     """
-    Direct Cloud CDN image fetcher for Indian TV serials.
+    Direct Cloud CDN image fetcher for Indian TV serials & Micro dramas.
     Never blocked on Koyeb/Cloud IPs.
     """
     try:
         clean_name = re.sub(r"[^a-zA-Z0-9 ]", " ", str(show_name)).strip()
-        search_query = f"{clean_name} series poster"
+        # Double quotes se Bing exact phrase search karega, aadha naam nahi uthayega
+        search_query = f'"{clean_name}" poster'
         
         url = "https://tse1.mm.bing.net/th"
         params = {
