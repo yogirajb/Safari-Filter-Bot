@@ -321,20 +321,23 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                 target_type = "tv" if is_series_file else "movie"
                 type_matched = [r for r in results if r.get("media_type") == target_type] or results
 
-                # Flexible Containment Match
+                # 1. Exact Match Priority (Outer Banks, The Boys etc.)
+                q_clean = re.sub(r"[^a-zA-Z0-9]", "", clean_q).lower()
                 for r in type_matched:
                     r_title = (r.get("name") if target_type == "tv" else r.get("title")) or ""
-                    if clean_q.lower() in r_title.strip().lower() or r_title.strip().lower() in clean_q.lower():
+                    r_clean = re.sub(r"[^a-zA-Z0-9]", "", r_title).lower()
+                    
+                    if q_clean == r_clean or q_clean + "s" == r_clean or r_clean + "s" == q_clean:
                         best_match = r
                         break
 
-                if not best_match:
+                # 2. Movies ke liye Normal Fallback, Series ke liye Half-name Bilkul Match Mat Karo
+                if not best_match and not is_series_file:
                     type_matched.sort(key=lambda x: (
-                        3 if (is_indian_tagged and x.get("original_language") in ["hi", "te", "ta", "ml", "kn", "bn", "mr", "pa"]) else (
-                            1 if x.get("original_language") == "en" else 0
-                        ),
-                        x.get("vote_count", 0),
-                        x.get("popularity", 0)
+                        3 if (is_indian_tagged and x.get("original_language") in ["hi", "te", "ta", "ml", "kn", "bn", "mr", "pa"]) else 0,
+                        x.get("vote_count", 0) > 30,
+                        x.get("popularity", 0),
+                        x.get("vote_count", 0)
                     ), reverse=True)
                     best_match = type_matched[0]
 
