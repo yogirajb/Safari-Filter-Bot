@@ -261,8 +261,10 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             raw_title = q
             raw_title = re.sub(r"\.(mkv|mp4|avi|webm)$", "", raw_title, flags=re.IGNORECASE)
 
+            # TV Serials ke liye Episode tags ke pehle ka naam lein aur Year filter bypass karein
             if is_series_file:
                 clean_q = re.split(r"(?i)\b(s\d+|e\d+|season\s*\d+|episode\s*\d+)\b", raw_title)[0]
+                search_year = None
             else:
                 year_match = re.search(r"[\. \-_(\[]((?:19|20)\d\d)[\. \-_)\]]", raw_title)
                 if year_match:
@@ -279,9 +281,11 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
             if not clean_q:
                 clean_q = str(query or "").strip()
 
-            # Progressive queries (Pura naam, 3-words, 2-words)
+            # Progressive Query Tries (Full name, 4 words, 3 words)
             queries_to_try = [clean_q]
             words = clean_q.split()
+            if len(words) > 4:
+                queries_to_try.append(" ".join(words[:4]))
             if len(words) > 3:
                 queries_to_try.append(" ".join(words[:3]))
             if len(words) > 2:
@@ -326,9 +330,10 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                 target_type = "tv" if is_series_file else "movie"
                 type_matched = [r for r in results if r.get("media_type") == target_type] or results
 
+                # Flexible Containment Match
                 for r in type_matched:
                     r_title = (r.get("name") if target_type == "tv" else r.get("title")) or ""
-                    if clean_q.lower() == r_title.strip().lower():
+                    if clean_q.lower() in r_title.strip().lower() or r_title.strip().lower() in clean_q.lower():
                         best_match = r
                         break
 
@@ -426,7 +431,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                     "url": f"https://www.themoviedb.org/{media_type}/{movie_id}",
                 }
 
-        # TV Serials ke liye: Agar TMDb par nahi mila toh purani movie mat uthao, web se poster lo!
+        # TV SERIALS STRICT FALLBACK (Old Movie Par Bilkul Nahi Girna)
         if is_series_file:
             web_poster = await fetch_web_poster(clean_q)
             final_display_title = f"{clean_q.title()}{season_tag}".strip()
@@ -455,12 +460,12 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                 "year": "2026",
                 "genres": "Drama, Series",
                 "poster": web_poster,
-                "plot": f"{clean_q} is a popular Indian television drama series.",
+                "plot": f"{clean_q.title()} is a popular Indian television drama series.",
                 "rating": "7.5",
-                "url": "https://www.imdb.com",
+                "url": "https://www.themoviedb.org",
             }
 
-        # Movies Fallback (Cinemagoer) - Only for Movies
+        # MOVIES FALLBACK (Cinemagoer) - Only for Movies
         loop = asyncio.get_running_loop()
         search_results = None
         for q_try in queries_to_try:
@@ -517,7 +522,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
     except Exception as e:
         logger.error(f"get_poster error: {e}")
         return None
-
+        
 async def get_settings(group_id):
     settings = temp.SETTINGS.get(group_id)
     if not settings:
