@@ -186,7 +186,7 @@ async def fetch_web_poster(show_name):
     """
     try:
         clean_name = re.sub(r"[^a-zA-Z0-9 ]", " ", str(show_name)).strip()
-        search_query = f"{clean_name} hindi serial poster"
+        search_query = f"{clean_name} series poster"
         
         url = "https://tse1.mm.bing.net/th"
         params = {
