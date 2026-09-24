@@ -2521,7 +2521,8 @@ async def get_spell_correction(query):
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(ddg_url, timeout=aiohttp.ClientTimeout(total=3)) as resp:
                 if resp.status == 200:
-                    data = await resp.json()
+                    raw_resp = await resp.text()
+                    data = json.loads(raw_resp)
                     if data and len(data) > 1 and data[1]:
                         for item in data[1]:
                             cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
