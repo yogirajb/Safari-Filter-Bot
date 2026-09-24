@@ -187,8 +187,8 @@ async def fetch_web_poster(show_name):
     try:
         clean_name = re.sub(r"[^a-zA-Z0-9 ]", " ", str(show_name)).strip()
         # Double quotes se Bing exact phrase search karega, aadha naam nahi uthayega
-        search_query = f'"{clean_name}" poster'
-        
+        search_query = f'"{clean_name}" serial drama poster'
+
         url = "https://tse1.mm.bing.net/th"
         params = {
             "q": search_query,
