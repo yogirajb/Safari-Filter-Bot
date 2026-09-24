@@ -425,9 +425,9 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                     "url": f"https://www.themoviedb.org/{media_type}/{movie_id}",
                 }
 
-        # TV SERIALS STRICT FALLBACK (Old Movie Par Bilkul Nahi Girna)
+        # TV SERIALS & MICRO DRAMAS STRICT FALLBACK
+        # Bing CDN ke galat / repeated posters ko rokne ke liye poster ko None rakhein
         if is_series_file:
-            web_poster = await fetch_web_poster(clean_q)
             final_display_title = f"{clean_q.title()}{season_tag}".strip()
             return {
                 "title": final_display_title,
@@ -453,7 +453,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                 "release_date": "N/A",
                 "year": "2026",
                 "genres": "Drama, Series",
-                "poster": web_poster,
+                "poster": None,  # <--- ISKO NONE KAREIN
                 "plot": f"{clean_q.title()} is a popular Indian television drama series.",
                 "rating": "7.5",
                 "url": "https://www.themoviedb.org",
