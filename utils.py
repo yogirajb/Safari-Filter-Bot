@@ -179,20 +179,46 @@ async def broadcast_messages(user_id, message):
         return False, "Error"
 
 async def fetch_web_poster(show_name):
-    """Google Images fallback for Indian TV serials not on TMDb"""
+    """
+    Cloud-safe image fallback for Indian TV serials.
+    Uses DuckDuckGo & Bing (works without API keys and avoids Google captcha).
+    """
     try:
-        search_term = f"{show_name} serial poster site:imdb.com OR site:hotstar.com OR site:zee5.com"
-        url = f"https://www.google.com/search?q={requests.utils.quote(search_term)}&tbm=isch"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        clean_name = re.sub(r"[^a-zA-Z0-9 ]", " ", str(show_name)).strip()
+        search_query = f"{clean_name} indian serial poster"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://duckduckgo.com/"
+        }
+
+        # 1. DuckDuckGo Image API
+        ddg_url = f"https://duckduckgo.com/i.js?q={quote_plus(search_query)}&o=json"
         async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(url, timeout=5) as resp:
+            async with session.get(ddg_url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
+                if resp.status == 200:
+                    try:
+                        data = await resp.json(content_type=None)
+                        results = data.get("results", [])
+                        for img in results[:5]:
+                            img_url = img.get("image")
+                            if img_url and any(img_url.lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".webp"]):
+                                return img_url
+                    except Exception:
+                        pass
+
+        # 2. Bing Images Fallback
+        bing_url = f"https://www.bing.com/images/search?q={quote_plus(search_query)}&FORM=HDRSC2"
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(bing_url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
                 if resp.status == 200:
                     text = await resp.text()
-                    matches = re.findall(r'https://encrypted-tbn0\.gstatic\.com/images\?q=tbn:[^"]+', text)
-                    if matches:
-                        return matches[0]
-    except Exception:
-        pass
+                    matches = re.findall(r'murl&quot;:&quot;(https?://[^&]+)&quot;', text)
+                    for m in matches[:3]:
+                        if any(m.lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".webp"]):
+                            return m
+    except Exception as e:
+        logger.error(f"fetch_web_poster error: {e}")
+        
     return None
 
 async def get_poster(query, bulk=False, id=False, file=None, year=None):
