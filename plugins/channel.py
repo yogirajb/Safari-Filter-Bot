@@ -244,13 +244,8 @@ async def media(bot, message):
     media.file_type = file_type
     media.caption = message.caption
 
-    # Extract Video/Document Embedded Thumbnail
-    file_thumb = None
-    if getattr(media, "thumbs", None):
-        try:
-            file_thumb = media.thumbs[0].file_id
-        except Exception:
-            file_thumb = None
+    # Check if embedded thumbnail exists
+    has_thumb = bool(getattr(media, "thumbs", None))
 
     # 1. Save File to Database
     try:
@@ -432,12 +427,23 @@ async def media(bot, message):
 
             sent_msg_ids = {}
 
+            # Thumbnail download agar web/tmdb poster na ho
+            local_thumb_path = None
+            if not poster_url and has_thumb:
+                try:
+                    local_thumb_path = await bot.download_media(media.thumbs[0])
+                except Exception as e:
+                    logging.error(f"Error downloading thumb: {e}")
+                    local_thumb_path = None
+
+            final_photo = poster_url or local_thumb_path
+
             for channel in target_channels:
                 try:
-                    if poster_url:
+                    if final_photo:
                         msg = await bot.send_photo(
                             chat_id=int(channel),
-                            photo=poster_url,
+                            photo=final_photo,
                             caption=final_caption,
                             has_spoiler=True,
                             parse_mode=enums.ParseMode.HTML,
@@ -454,10 +460,10 @@ async def media(bot, message):
                     sent_msg_ids[str(channel)] = msg.id
                 except FloodWait as fw:
                     await asyncio.sleep(fw.value)
-                    if poster_url:
+                    if final_photo:
                         msg = await bot.send_photo(
                             chat_id=int(channel),
-                            photo=poster_url,
+                            photo=final_photo,
                             caption=final_caption,
                             has_spoiler=True,
                             parse_mode=enums.ParseMode.HTML,
@@ -474,6 +480,13 @@ async def media(bot, message):
                     sent_msg_ids[str(channel)] = msg.id
                 except Exception as e:
                     logging.error(f"Error sending post: {e}")
+
+            # Temp thumb cleanup taaki server storage fill na ho
+            if local_thumb_path and os.path.exists(local_thumb_path):
+                try:
+                    os.remove(local_thumb_path)
+                except Exception:
+                    pass
 
             ACTIVE_POSTS[current_merge_key] = {
                 "msg_ids": sent_msg_ids,
