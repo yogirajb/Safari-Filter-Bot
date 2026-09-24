@@ -462,7 +462,7 @@ async def media(bot, message):
                             reply_markup=post_markup
                         )
                     sent_msg_ids[str(channel)] = msg.id
-            except Exception as e:
+                except Exception as e:
                     logging.error(f"Error sending post: {e}")
 
             ACTIVE_POSTS[current_merge_key] = {
