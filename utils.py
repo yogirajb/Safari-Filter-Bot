@@ -327,7 +327,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                     r_title = (r.get("name") if target_type == "tv" else r.get("title")) or ""
                     r_clean = re.sub(r"[^a-zA-Z0-9]", "", r_title).lower()
                     
-                    if q_clean == r_clean or q_clean + "s" == r_clean or r_clean + "s" == q_clean:
+                    if q_clean == r_clean:
                         best_match = r
                         break
 
