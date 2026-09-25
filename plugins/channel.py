@@ -65,6 +65,7 @@ def clean_movie_title(filename):
     - Strips branding, channel names
     - Cuts exactly before Season/Episode tags
     - Handles numeric titles (e.g. 1917)
+    - Year priority cut for titles with parts (e.g. Toy Story 5)
     """
     name = re.sub(r"\.(mkv|mp4|avi|webm|zip|rar)$", "", str(filename), flags=re.IGNORECASE)
     name = re.sub(r"^\s*(\[.*?\]|\(.*?\))\s*", "", name)
@@ -125,13 +126,14 @@ def clean_movie_title(filename):
     # Smart Year Detection
     all_years = list(re.finditer(r"\b(19\d\d|20\d\d)\b", name))
     extracted_year = None
+    year_cut = None
+
     if all_years:
-        if all_years[0].start() == 0 and len(all_years) > 1:
-            extracted_year = all_years[1].group(1)
-            cut_positions.append(all_years[1].start())
-        elif all_years[0].start() > 0:
-            extracted_year = all_years[0].group(1)
-            cut_positions.append(all_years[0].start())
+        for ym in all_years:
+            if ym.start() > 0:
+                extracted_year = ym.group(1)
+                year_cut = ym.start()
+                break
 
     token_boundary = re.search(
         r"(?i)\b(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|web|bluray|dvd|camrip|hdcam|"
@@ -143,10 +145,15 @@ def clean_movie_title(filename):
         r"hdr10plus|hdr10|hdr|dv|dovi|nf|hs|jhs|v\d+|psa|primexofficial|@\w+|\d+mb|\d+gb|\d+kbps)\b",
         name
     )
-    if token_boundary and token_boundary.start() > 0:
-        cut_positions.append(token_boundary.start())
 
-    first_cut = min(cut_positions)
+    # Agar Year mila hai toh priority Year Cut ko do taaki Movie Part (e.g. 5, 2, 3) safe rahe
+    if year_cut:
+        first_cut = year_cut
+    else:
+        if token_boundary and token_boundary.start() > 0:
+            cut_positions.append(token_boundary.start())
+        first_cut = min(cut_positions)
+
     main_title = name[:first_cut]
     main_title = re.sub(r"[\(\[\{\)\]\}]", " ", main_title)
     clean_title = " ".join(main_title.split()).strip()
