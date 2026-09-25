@@ -74,8 +74,8 @@ def clean_movie_title(filename):
     name = re.sub(r"(?i)^\s*@\w+(\s+(movies|cinema|films|series|hub|channel|official|off|tv|network|media))?\s*", "", name)
 
     # 1. Episode Range Detection directly on raw string to prevent symbol stripping issues
-    raw_bracket_range = re.search(r"(?i)\[?\s*(?:S(\d{1,2}))?\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*[\-\–\—to\s]+\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*\]?", name)
-    
+    raw_bracket_range = re.search(r"(?i)[\[\(]?\s*(?:S(\d{1,2}))?\s*(?:E|EP|Episode|Episodes)?\s*\(?(\d{1,4})\)?\s*[\-\–\—to\s]+\s*(?:E|EP|Episode|Episodes)?\s*\(?(\d{1,4})\)?\s*[\]\)]?", name)
+
     season_tag = ""
     episodes_found = set()
     is_combined = bool(re.search(r"(?i)\b(combined|complete|all\s*episodes|full\s*season|pack|batch)\b", name))
@@ -406,7 +406,7 @@ async def media(bot, message):
                 if not pure_search_title:
                     pure_search_title = clean_title
 
-                search_yr = None if season_tag else extracted_year
+                search_yr = extracted_year
                 
                 # Pure show name se search karein taaki TMDb match ho sake
                 imdb_info = await get_poster(pure_search_title, year=search_yr, file=f"{pure_search_title} {season_tag}")
