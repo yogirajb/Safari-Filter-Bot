@@ -469,4 +469,62 @@ async def media(bot, message):
                             chat_id=int(channel),
                             photo=final_photo,
                             caption=final_caption,
-                            has_spoil
+                            has_spoiler=True,
+                            parse_mode=enums.ParseMode.HTML,
+                            reply_markup=post_markup
+                        )
+                    else:
+                        msg = await bot.send_message(
+                            chat_id=int(channel),
+                            text=final_caption,
+                            parse_mode=enums.ParseMode.HTML,
+                            disable_web_page_preview=True,
+                            reply_markup=post_markup
+                        )
+                    sent_msg_ids[str(channel)] = msg.id
+                except FloodWait as fw:
+                    await asyncio.sleep(fw.value)
+                    if final_photo:
+                        msg = await bot.send_photo(
+                            chat_id=int(channel),
+                            photo=final_photo,
+                            caption=final_caption,
+                            has_spoiler=True,
+                            parse_mode=enums.ParseMode.HTML,
+                            reply_markup=post_markup
+                        )
+                    else:
+                        msg = await bot.send_message(
+                            chat_id=int(channel),
+                            text=final_caption,
+                            parse_mode=enums.ParseMode.HTML,
+                            disable_web_page_preview=True,
+                            reply_markup=post_markup
+                        )
+                    sent_msg_ids[str(channel)] = msg.id
+                except Exception as e:
+                    logging.error(f"Error sending post: {e}")
+
+            # Temp thumb cleanup taaki server storage fill na ho
+            if local_thumb_path and os.path.exists(local_thumb_path):
+                try:
+                    os.remove(local_thumb_path)
+                except Exception:
+                    pass
+
+            ACTIVE_POSTS[current_merge_key] = {
+                "msg_ids": sent_msg_ids,
+                "title": title,
+                "genres": genres,
+                "rating": rating,
+                "year": year,
+                "languages": final_languages,
+                "plot": plot,
+                "episodes": set(new_eps),
+                "qualities": set(new_qualities),
+                "is_combined": is_comb,
+                "edited_for_comb": False
+            }
+
+    except Exception as e:
+        logging.error(f"Auto post execution error: {e}")
