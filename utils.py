@@ -454,7 +454,7 @@ async def get_poster(query, bulk=False, id=False, file=None, year=None):
                 "year": "2026",
                 "genres": "Drama, Series",
                 "poster": None,  # <--- ISKO NONE KAREIN
-                "plot": f"{clean_q.title()} is a popular Indian television drama series.",
+                "plot": f"{clean_q.title()} is a trending short drama series. Stream all episodes now.",
                 "rating": "7.5",
                 "url": "https://www.themoviedb.org",
             }
