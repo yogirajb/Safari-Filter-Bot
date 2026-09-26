@@ -76,7 +76,7 @@ def clean_movie_title(filename):
     # 1. Bulletproof Range Detection: [E428-E434], [E01-E52], EP(13-16), S01E01-E10
     raw_bracket_range = re.search(
         r"(?i)[\[\(]?\s*(?:S(\d{1,2}))?\s*(?:E|EP|Episode|Episodes)?\s*\(?(\d{1,4})\)?\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*\(?(\d{1,4})\)?\s*[\]\)]?",
-        raw_str
+        name
     )
 
     season_tag = ""
