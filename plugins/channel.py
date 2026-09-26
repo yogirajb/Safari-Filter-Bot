@@ -73,23 +73,29 @@ def clean_movie_title(filename):
     name = re.sub(r"^\s*(\[.*?\]|\(.*?\))\s*", "", name)
     name = re.sub(r"(?i)^\s*@\w+(\s+(movies|cinema|films|series|hub|channel|official|off|tv|network|media))?\s*", "", name)
 
-    # 1. Episode Range Detection (Hyphen, en-dash, em-dash, ya 'to' - Space allowed nahi hai taaki 720p na jude)
-    raw_bracket_range = re.search(r"(?i)[\[\(]?\s*(?:S(\d{1,2}))?\s*(?:E|EP|Episode|Episodes)?\s*\(?(\d{1,4})\)?\s*[\-\–\—]|(?:\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*\(?(\d{1,4})\)?\s*[\]\)]?", name)
-    
+    # 1. Bulletproof Range Detection: [E428-E434], [E01-E52], EP(13-16), S01E01-E10
+    raw_bracket_range = re.search(
+        r"(?i)[\[\(]?\s*(?:S(\d{1,2}))?\s*(?:E|EP|Episode|Episodes)?\s*\(?(\d{1,4})\)?\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*\(?(\d{1,4})\)?\s*[\]\)]?",
+        raw_str
+    )
+
     season_tag = ""
     episodes_found = set()
     is_combined = bool(re.search(r"(?i)\b(combined|complete|all\s*episodes|full\s*season|pack|batch)\b", name))
     cut_positions = [len(name)]
 
-    if raw_bracket_range and (raw_bracket_range.group(2) and raw_bracket_range.group(3)):
-        if raw_bracket_range.group(1):
-            s_num = int(raw_bracket_range.group(1))
-            season_tag = f"S{s_num:02d}"
-        s_ep = int(raw_bracket_range.group(2))
-        e_ep = int(raw_bracket_range.group(3))
-        for x in range(min(s_ep, e_ep), max(s_ep, e_ep) + 1):
-            episodes_found.add(x)
-        cut_positions.append(raw_bracket_range.start())
+    if raw_bracket_range:
+        g2 = raw_bracket_range.group(2)
+        g3 = raw_bracket_range.group(3)
+        if g2 and g3:
+            if raw_bracket_range.group(1):
+                s_num = int(raw_bracket_range.group(1))
+                season_tag = f"S{s_num:02d}"
+            s_ep = int(g2)
+            e_ep = int(g3)
+            for x in range(min(s_ep, e_ep), max(s_ep, e_ep) + 1):
+                episodes_found.add(x)
+            cut_positions.append(raw_bracket_range.start())
 
     # Standardize string for subsequent checks
     name = re.sub(r"[\._\-\+:]", " ", name)
