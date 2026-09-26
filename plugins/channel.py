@@ -401,17 +401,28 @@ async def media(bot, message):
             # CASE 2: New Post Creation
             imdb_info = None
             try:
-                # Subtitles aur extra words ko hata kar sirf pure show ka naam nikalein
+                # 1. Base clean title nikalein (Season / Episode tags ke pehle ka hissa)
                 pure_search_title = re.split(r"(?i)\b(s\d{1,2}|e\d{1,4}|season\s*\d+|episode\s*\d+)\b", clean_title)[0].strip()
                 if not pure_search_title:
                     pure_search_title = clean_title
 
-                # Year match priority (Taaki purani series jaise 2002 ki The Court match na ho)
                 search_yr = extracted_year
                 
+                # Attempt 1: Full cleaned title se search
                 imdb_info = await get_poster(pure_search_title, year=search_yr, file=f"{pure_search_title} {season_tag}")
                 if not imdb_info and search_yr:
                     imdb_info = await get_poster(pure_search_title, year=None, file=f"{pure_search_title} {season_tag}")
+
+                # Attempt 2: Agar nahi mila aur title lamba hai (Tagline/Subtitle laga hai)
+                # Jaise "Maharashtrachi Hasyajatra Comedycha 5G" -> pehle 2 words "Maharashtrachi Hasyajatra" se dhoondo
+                if not imdb_info and season_tag:
+                    words = pure_search_title.split()
+                    if len(words) > 2:
+                        short_title = " ".join(words[:2])
+                        imdb_info = await get_poster(short_title, year=None, file=f"{short_title} {season_tag}")
+                        if not imdb_info and len(words) > 3:
+                            short_title = " ".join(words[:3])
+                            imdb_info = await get_poster(short_title, year=None, file=f"{short_title} {season_tag}")
             except Exception as e:
                 logging.error(f"Error fetching Poster: {e}")
 
