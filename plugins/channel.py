@@ -88,7 +88,7 @@ def clean_movie_title(filename):
     # 2. Bulletproof Episode Range Match (Dots/Hyphen hatne se PEHLE check karein)
     # Match: [E01-E100], [E428-E434], EP(13-16), E01-E10, E01 to E10
     range_match = re.search(
-        r"(?i)(?:\[|\(|\b)(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})(?:\]|\)|\b)",
+        r"(?i)[\[\(]?\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*[\]\)]?",
         name
     )
 
