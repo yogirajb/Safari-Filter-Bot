@@ -38,24 +38,29 @@ language_map = {
     "urd": "Urdu", "urdu": "Urdu",
     "odi": "Odia", "odia": "Odia", "oriya": "Odia",
     "asm": "Assamese", "assamese": "Assamese",
+    "nep": "Nepali", "nepali": "Nepali",
+    "sin": "Sinhala", "sinhala": "Sinhala",
 
-    # Asian Dramas & Anime (Trending)
+    # Asian Dramas, Anime & Web Shows
     "kor": "Korean", "korean": "Korean",
     "jap": "Japanese", "japanese": "Japanese",
     "chi": "Chinese", "chinese": "Chinese",
     "tha": "Thai", "thai": "Thai",
+    "ind": "Indonesian", "indonesian": "Indonesian", "indo": "Indonesian",
+    "vie": "Vietnamese", "vietnamese": "Vietnamese",
 
-    # International Cinema
+    # World Cinema
     "spa": "Spanish", "spanish": "Spanish", "espanol": "Spanish",
     "fre": "French", "french": "French",
     "ger": "German", "german": "German",
     "rus": "Russian", "russian": "Russian",
     "ita": "Italian", "italian": "Italian",
+    "por": "Portuguese", "portuguese": "Portuguese",
     "tur": "Turkish", "turkish": "Turkish",
     "ara": "Arabic", "arabic": "Arabic",
     "per": "Persian", "persian": "Persian",
 
-    # Audio Combinations
+    # Special Multi Tags
     "dual": "Dual Audio", "multi": "Multi Audio"
 }
 
@@ -177,7 +182,8 @@ def clean_movie_title(filename):
         r"(?i)\b(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|web|bluray|dvd|camrip|hdcam|"
         r"x264|x265|hevc|10bit|10\s*bit|ds4k|aac\d*|ddp\d*|dd\d*|dts|truehd|sub|esub|esubs|"
         r"kannada|hindi|english|telugu|tamil|malayalam|marathi|gujarati|punjabi|bengali|bangla|"
-        r"bhojpuri|urdu|odia|oriya|assamese|korean|japanese|chinese|thai|spanish|french|german|russian|turkish|"
+        r"bhojpuri|urdu|odia|oriya|assamese|nepali|sinhala|korean|japanese|chinese|thai|indonesian|"
+        r"vietnamese|spanish|french|german|russian|italian|portuguese|turkish|arabic|persian|"
         r"hq|clean|hd|combined|sample|uncut|uply|archie|mgreborn|mkvcinemas|zee5|amzn|dual|audio|org|"
         r"sonyliv|sony|liv|itunes|hotstar|jiocinema|voot|altbalaji|aha|mxplayer|netflix|primevideo|"
         r"kukutv|kuku|storytv|story|pocketfm|dramabox|reelshort|shortmax|"
