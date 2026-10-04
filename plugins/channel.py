@@ -91,10 +91,10 @@ def clean_movie_title(filename):
         name
     )
 
-    # 3. Universal Range Match: [E01-E45], E01_E44, E01-E100, EP(13-16)
+    # 3. Universal Range Match (Handles E01-480, [E01-E100], E01_E44, while blocking 480p/720p)
     range_match = re.search(
-        r"(?i)[\[\(]?\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b|_|\s+)\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*[\]\)]?|"
-        r"(?i)[\[\(]\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*[\]\)]",
+        r"(?i)[\[\(]?\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b|_|\s+)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})(?!p|k)\s*[\]\)]?|"
+        r"(?i)[\[\(]\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})(?!p|k)\s*[\]\)]",
         name
     )
 
@@ -112,8 +112,9 @@ def clean_movie_title(filename):
         if g1 and g2:
             s_ep = int(g1)
             e_ep = int(g2)
-            invalid_eps = {480, 720, 1080, 2160}
-            if e_ep not in invalid_eps:
+            
+            # Agar dono number alag hain aur genuine range hai (e.g. 1 se 480)
+            if s_ep != e_ep:
                 for x in range(min(s_ep, e_ep), max(s_ep, e_ep) + 1):
                     episodes_found.add(x)
                 cut_positions.append(range_match.start())
