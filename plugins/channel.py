@@ -23,19 +23,39 @@ MERGE_LOCK = asyncio.Lock()
 SAFE_MAX_CAPTION_LENGTH = 980
 
 language_map = {
+    # Indian Mainstream & Regional
     "hin": "Hindi", "hindi": "Hindi",
     "eng": "English", "english": "English",
-    "mar": "Marathi", "marathi": "Marathi",
-    "kan": "Kannada", "kannada": "Kannada",
-    "tel": "Telugu", "telugu": "Telugu",
     "tam": "Tamil", "tamil": "Tamil",
+    "tel": "Telugu", "telugu": "Telugu",
     "mal": "Malayalam", "malayalam": "Malayalam",
-    "guj": "Gujarati", "gujarati": "Gujarati",
+    "kan": "Kannada", "kannada": "Kannada",
+    "mar": "Marathi", "marathi": "Marathi",
     "pun": "Punjabi", "punjabi": "Punjabi",
+    "guj": "Gujarati", "gujarati": "Gujarati",
+    "ben": "Bengali", "bengali": "Bengali", "bangla": "Bengali",
+    "bhoj": "Bhojpuri", "bhojpuri": "Bhojpuri",
+    "urd": "Urdu", "urdu": "Urdu",
+    "odi": "Odia", "odia": "Odia", "oriya": "Odia",
+    "asm": "Assamese", "assamese": "Assamese",
+
+    # Asian Dramas & Anime (Trending)
+    "kor": "Korean", "korean": "Korean",
     "jap": "Japanese", "japanese": "Japanese",
-    "kor": "Korean", "korean": "Korean", 
-    "ben": "Bengali", "bengali": "Bengali", 
     "chi": "Chinese", "chinese": "Chinese",
+    "tha": "Thai", "thai": "Thai",
+
+    # International Cinema
+    "spa": "Spanish", "spanish": "Spanish", "espanol": "Spanish",
+    "fre": "French", "french": "French",
+    "ger": "German", "german": "German",
+    "rus": "Russian", "russian": "Russian",
+    "ita": "Italian", "italian": "Italian",
+    "tur": "Turkish", "turkish": "Turkish",
+    "ara": "Arabic", "arabic": "Arabic",
+    "per": "Persian", "persian": "Persian",
+
+    # Audio Combinations
     "dual": "Dual Audio", "multi": "Multi Audio"
 }
 
@@ -156,7 +176,8 @@ def clean_movie_title(filename):
     token_boundary = re.search(
         r"(?i)\b(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|web|bluray|dvd|camrip|hdcam|"
         r"x264|x265|hevc|10bit|10\s*bit|ds4k|aac\d*|ddp\d*|dd\d*|dts|truehd|sub|esub|esubs|"
-        r"kannada|hindi|english|telugu|tamil|malayalam|marathi|gujarati|punjabi|bengali|"
+        r"kannada|hindi|english|telugu|tamil|malayalam|marathi|gujarati|punjabi|bengali|bangla|"
+        r"bhojpuri|urdu|odia|oriya|assamese|korean|japanese|chinese|thai|spanish|french|german|russian|turkish|"
         r"hq|clean|hd|combined|sample|uncut|uply|archie|mgreborn|mkvcinemas|zee5|amzn|dual|audio|org|"
         r"sonyliv|sony|liv|itunes|hotstar|jiocinema|voot|altbalaji|aha|mxplayer|netflix|primevideo|"
         r"kukutv|kuku|storytv|story|pocketfm|dramabox|reelshort|shortmax|"
