@@ -116,12 +116,10 @@ def clean_movie_title(filename):
         name
     )
 
-    # 3. Universal Range Match: [E01-04], [E01-E45], E01_E44, E01-E100, EP(13-16)
-    # Underscore ya Space aane par dusre number ke aage E compulsory hai taaki 1080p na fase
+    # 3. Universal Range Match (Hyphen, Underscore, Bracket, Dot sab clean handle karega)
     range_match = re.search(
-        r"(?i)[\[\(]?\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\b\s*[\]\)]?|"
-        r"(?i)[\[\(]?\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*(?:_|\s+)\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\b\s*[\]\)]?|"
-        r"(?i)[\[\(]\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\b\s*[\]\)]",
+        r"(?i)(?:^|[\s_\[\(-])(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*(?:[\-\–\—]|to)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})(?!p|k)(?:$|[\s_\]\)])|"
+        r"(?i)(?:^|[\s_\[\(-])(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*[\s_]+\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})(?!p|k)(?:$|[\s_\]\)])",
         name
     )
 
@@ -134,8 +132,8 @@ def clean_movie_title(filename):
             episodes_found.add(x)
         cut_positions.append(se_range_match.start())
     elif range_match:
-        g1 = range_match.group(1) or range_match.group(3) or range_match.group(5)
-        g2 = range_match.group(2) or range_match.group(4) or range_match.group(6)
+        g1 = range_match.group(1) or range_match.group(3)
+        g2 = range_match.group(2) or range_match.group(4)
         if g1 and g2:
             s_ep = int(g1)
             e_ep = int(g2)
