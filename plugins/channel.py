@@ -439,7 +439,6 @@ async def media(bot, message):
                     imdb_info = await get_poster(pure_search_title, year=None, file=f"{pure_search_title} {season_tag}")
 
                 # Attempt 2: Agar nahi mila aur title lamba hai (Tagline/Subtitle laga hai)
-                # Jaise "Maharashtrachi Hasyajatra Comedycha 5G" -> pehle 2 words "Maharashtrachi Hasyajatra" se dhoondo
                 if not imdb_info and season_tag:
                     words = pure_search_title.split()
                     if len(words) > 2:
@@ -448,6 +447,17 @@ async def media(bot, message):
                         if not imdb_info and len(words) > 3:
                             short_title = " ".join(words[:3])
                             imdb_info = await get_poster(short_title, year=None, file=f"{short_title} {season_tag}")
+
+                # Strict Verification: Agar IMDb mila hai toh check karein title kitna match karta hai
+                if imdb_info and imdb_info.get("title"):
+                    fetched_title = imdb_info.get("title").lower()
+                    original_clean = pure_search_title.lower()
+                    similarity = SequenceMatcher(None, original_clean, fetched_title).ratio()
+
+                    # Agar title match 40% se kam hai aur fetched title original me kahi match nahi karta
+                    if similarity < 0.40 and original_clean not in fetched_title and fetched_title not in original_clean:
+                        imdb_info = None
+
             except Exception as e:
                 logging.error(f"Error fetching Poster: {e}")
 
