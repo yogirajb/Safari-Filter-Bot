@@ -116,10 +116,12 @@ def clean_movie_title(filename):
         name
     )
 
-    # 3. Universal Range Match (Handles E01-480, [E01-E100], E01_E44, while blocking 480p/720p)
+    # 3. Universal Range Match: [E01-04], [E01-E45], E01_E44, E01-E100, EP(13-16)
+    # Underscore ya Space aane par dusre number ke aage E compulsory hai taaki 1080p na fase
     range_match = re.search(
-        r"(?i)[\[\(]?\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b|_|\s+)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})(?!p|k)\s*[\]\)]?|"
-        r"(?i)[\[\(]\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})(?!p|k)\s*[\]\)]",
+        r"(?i)[\[\(]?\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\b\s*[\]\)]?|"
+        r"(?i)[\[\(]?\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\s*(?:_|\s+)\s*(?:E|EP|Episode|Episodes)\s*(\d{1,4})\b\s*[\]\)]?|"
+        r"(?i)[\[\(]\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\s*(?:[\-\–\—]|\bto\b)\s*(?:E|EP|Episode|Episodes)?\s*(\d{1,4})\b\s*[\]\)]",
         name
     )
 
@@ -132,14 +134,13 @@ def clean_movie_title(filename):
             episodes_found.add(x)
         cut_positions.append(se_range_match.start())
     elif range_match:
-        g1 = range_match.group(1) or range_match.group(3)
-        g2 = range_match.group(2) or range_match.group(4)
+        g1 = range_match.group(1) or range_match.group(3) or range_match.group(5)
+        g2 = range_match.group(2) or range_match.group(4) or range_match.group(6)
         if g1 and g2:
             s_ep = int(g1)
             e_ep = int(g2)
-            
-            # Agar dono number alag hain aur genuine range hai (e.g. 1 se 480)
-            if s_ep != e_ep:
+            invalid_eps = {48, 72, 108, 216, 480, 720, 1080, 2160}
+            if e_ep not in invalid_eps and s_ep != e_ep:
                 for x in range(min(s_ep, e_ep), max(s_ep, e_ep) + 1):
                     episodes_found.add(x)
                 cut_positions.append(range_match.start())
