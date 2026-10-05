@@ -466,7 +466,18 @@ async def media(bot, message):
                 if season_tag and season_tag.lower() not in title.lower():
                     title = f"{title} {season_tag}".strip()
             else:
-                title = f"{pure_search_title.title()} {season_tag}".strip()
+                base_name = pure_search_title.title().strip()
+                # Agar season_tag missing ho toh raw filename se season check karo
+                effective_season = season_tag
+                if not effective_season:
+                    s_chk = re.search(r"(?i)\b(S\d{1,2}|Season\s*\d+)\b", raw_name)
+                    if s_chk:
+                        effective_season = s_chk.group(0).upper().replace("EASON", "")
+                
+                if effective_season:
+                    title = f"{base_name} {effective_season}".strip()
+                else:
+                    title = base_name
 
             current_yr = str(datetime.now().year)
 
