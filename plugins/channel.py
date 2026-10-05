@@ -461,21 +461,23 @@ async def media(bot, message):
             except Exception as e:
                 logging.error(f"Error fetching Poster: {e}")
 
+            # Direct filename aur caption se season confirm karein
+            final_season = season_tag
+            if not final_season:
+                raw_to_check = f"{raw_name} {caption_text}"
+                s_chk = re.search(r"(?i)\b(?:S(\d{1,2})|Season\s*(\d{1,2}))\b", raw_to_check)
+                if s_chk:
+                    s_val = int(s_chk.group(1) or s_chk.group(2))
+                    final_season = f"S{s_val:02d}"
+
             if imdb_info and imdb_info.get("title"):
                 title = imdb_info.get("title")
-                if season_tag and season_tag.lower() not in title.lower():
-                    title = f"{title} {season_tag}".strip()
+                if final_season and final_season.lower() not in title.lower():
+                    title = f"{title} {final_season}".strip()
             else:
                 base_name = pure_search_title.title().strip()
-                # Agar season_tag missing ho toh raw filename se season check karo
-                effective_season = season_tag
-                if not effective_season:
-                    s_chk = re.search(r"(?i)\b(S\d{1,2}|Season\s*\d+)\b", raw_name)
-                    if s_chk:
-                        effective_season = s_chk.group(0).upper().replace("EASON", "")
-                
-                if effective_season:
-                    title = f"{base_name} {effective_season}".strip()
+                if final_season:
+                    title = f"{base_name} {final_season}".strip()
                 else:
                     title = base_name
 
@@ -494,7 +496,7 @@ async def media(bot, message):
                     imdb_lang = ", ".join(imdb_lang)
                 final_languages = detected_languages or imdb_lang or "Hindi"
             else:
-                genres = "Drama, Series" if season_tag else "Drama, Action"
+                genres = "Drama, Series" if final_season else "Drama, Action"
                 year = extracted_year or current_yr
                 rating = "0.0"
                 poster_url = None
