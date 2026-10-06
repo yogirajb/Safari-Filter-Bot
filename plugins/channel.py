@@ -426,36 +426,39 @@ async def media(bot, message):
             # CASE 2: New Post Creation
             imdb_info = None
             try:
-                # 1. Base clean title nikalein (Season / Episode tags ke pehle ka hissa)
+                # 1. Base clean title nikalein
                 pure_search_title = re.split(r"(?i)\b(s\d{1,2}|e\d{1,4}|season\s*\d+|episode\s*\d+)\b", clean_title)[0].strip()
                 if not pure_search_title:
                     pure_search_title = clean_title
 
                 search_yr = extracted_year
                 
-                # Attempt 1: Full cleaned title se search
-                imdb_info = await get_poster(pure_search_title, year=search_yr, file=f"{pure_search_title} {season_tag}")
-                if not imdb_info and search_yr:
-                    imdb_info = await get_poster(pure_search_title, year=None, file=f"{pure_search_title} {season_tag}")
+                # Check karein ki audio/web drama platform ka content toh nahi hai
+                is_audio_or_web_show = bool(re.search(
+                    r"(?i)\b(kuku|kukutv|pocketfm|dramabox|reelshort|shortmax|storytv)\b", 
+                    f"{raw_name} {caption_text}"
+                ))
 
-                # Attempt 2: Agar nahi mila aur title lamba hai (Tagline/Subtitle laga hai)
-                if not imdb_info and season_tag:
-                    words = pure_search_title.split()
-                    if len(words) > 2:
-                        short_title = " ".join(words[:2])
-                        imdb_info = await get_poster(short_title, year=None, file=f"{short_title} {season_tag}")
-                        if not imdb_info and len(words) > 3:
-                            short_title = " ".join(words[:3])
-                            imdb_info = await get_poster(short_title, year=None, file=f"{short_title} {season_tag}")
+                # Sirf tab IMDb search karo agar yeh Kuku/PocketFM show NA ho
+                if not is_audio_or_web_show:
+                    # Attempt 1: Full cleaned title se search
+                    imdb_info = await get_poster(pure_search_title, year=search_yr, file=f"{pure_search_title} {season_tag}")
+                    if not imdb_info and search_yr:
+                        imdb_info = await get_poster(pure_search_title, year=None, file=f"{pure_search_title} {season_tag}")
 
-                # Strict Verification: Agar IMDb mila hai toh check karein title kitna match karta hai
+                # Strict Verification: Galat movie guess pakadne ke liye
                 if imdb_info and imdb_info.get("title"):
                     fetched_title = imdb_info.get("title").lower()
                     original_clean = pure_search_title.lower()
                     similarity = SequenceMatcher(None, original_clean, fetched_title).ratio()
 
-                    # Agar title match 40% se kam hai aur fetched title original me kahi match nahi karta
-                    if similarity < 0.40 and original_clean not in fetched_title and fetched_title not in original_clean:
+                    # Check karein ki original title ke main words IMDb title me hain ya nahi
+                    orig_words = [w for w in original_clean.split() if len(w) > 2]
+                    matched_words = [w for w in orig_words if w in fetched_title]
+                    word_match_ratio = len(matched_words) / len(orig_words) if orig_words else 1.0
+
+                    # Agar similarity 70% se kam ho ya main words 65% se kam match hon, toh result reject karo
+                    if similarity < 0.70 or word_match_ratio < 0.65:
                         imdb_info = None
 
             except Exception as e:
