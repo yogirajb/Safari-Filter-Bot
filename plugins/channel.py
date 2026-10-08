@@ -33,6 +33,8 @@ language_map = {
     "mar": "Marathi", "marathi": "Marathi",
     "pun": "Punjabi", "punjabi": "Punjabi",
     "guj": "Gujarati", "gujarati": "Gujarati",
+    "raj": "Rajasthani", "rajasthani": "Rajasthani", "marwari": "Rajasthani",
+    "har": "Haryanvi", "haryanvi": "Haryanvi",
     "ben": "Bengali", "bengali": "Bengali", "bangla": "Bengali",
     "bhoj": "Bhojpuri", "bhojpuri": "Bhojpuri",
     "urd": "Urdu", "urdu": "Urdu",
@@ -180,7 +182,7 @@ def clean_movie_title(filename):
     token_boundary = re.search(
         r"(?i)\b(480p|720p|1080p|2160p|4k|hdrip|webrip|web-dl|web|bluray|dvd|camrip|hdcam|"
         r"x264|x265|hevc|10bit|10\s*bit|ds4k|aac\d*|ddp\d*|dd\d*|dts|truehd|sub|esub|esubs|"
-        r"kannada|hindi|english|telugu|tamil|malayalam|marathi|gujarati|punjabi|bengali|bangla|"
+        r"kannada|hindi|english|telugu|tamil|malayalam|marathi|gujarati|punjabi|bengali|bangla|haryanvi|marwari|rajasthani|"
         r"bhojpuri|urdu|odia|oriya|assamese|nepali|sinhala|korean|japanese|chinese|thai|indonesian|"
         r"vietnamese|spanish|french|german|russian|italian|portuguese|turkish|arabic|persian|"
         r"hq|clean|hd|combined|sample|uncut|uply|archie|mgreborn|mkvcinemas|zee5|amzn|dual|audio|org|"
