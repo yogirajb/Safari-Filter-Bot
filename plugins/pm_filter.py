@@ -1206,66 +1206,70 @@ async def select_episode(bot, query):
 
 @Client.on_callback_query(filters.regex(r"^spol"))
 async def pm_spoll_choker(bot, query):
-    _, id, user = query.data.split('#')
+    _, movie_query, user = query.data.split('#')
     if int(user) != 0 and query.from_user.id != int(user):
         return await query.answer(script.ALRT_TXT.format(query.from_user.first_name), show_alert=True)
-    movie = await get_poster(id, id=True)
-    search = movie.get('title')
+    
     await query.answer('ᴄʜᴇᴄᴋɪɴɢ ɪɴ ᴍʏ ᴅᴀᴛᴀʙᴀꜱᴇ 🌚')
-    files, offset, total_results = await get_search_results(query.message.chat.id, search)
+    
+    # Direct search string use karein taaki NoneType crash na ho
+    search = movie_query.strip()
+    
+    files, offset, total_results = await get_search_results(query.message.chat.id, search, offset=0, filter=True)
     if files:
         k = (search, files, offset, total_results)
         await auto_filter(bot, query, k)
     else:
+        # DB me file na milne par Log channel me alert send karein
         try:
-            reqstr1 = query.from_user.id if query.from_user else 0
-            reqstr = await bot.get_users(reqstr1)
-            if NO_RESULTS_MSG:
-                safari = [[
-                    InlineKeyboardButton('ɴᴏᴛ ʀᴇʟᴇᴀsᴇ 📅', callback_data=f"not_release:{reqstr1}:{search}"),
-                    InlineKeyboardButton('ɴᴏᴛ ᴀᴠᴀɪʟᴀʙʟᴇ 🙅', callback_data=f"not_available:{reqstr1}:{search}")
+            user_id = query.from_user.id if query.from_user else 0
+            user_mention = query.from_user.mention if query.from_user else "User"
+            
+            safari = [
+                [
+                    InlineKeyboardButton('ɴᴏᴛ ʀᴇʟᴇᴀsᴇ 📅', callback_data=f"not_release:{user_id}:{search}"),
+                    InlineKeyboardButton('ɴᴏᴛ ᴀᴠᴀɪʟᴀʙʟᴇ 🙅', callback_data=f"not_available:{user_id}:{search}")
                 ],[
-                    InlineKeyboardButton('ᴜᴘʟᴏᴀᴅᴇᴅ ✅', callback_data=f"uploaded:{reqstr1}:{search}")
+                    InlineKeyboardButton('ᴜᴘʟᴏᴀᴅᴇᴅ ✅', callback_data=f"uploaded:{user_id}:{search}")
                 ],[
-                    InlineKeyboardButton('ɪɴᴠᴀʟɪᴅ ғᴏʀᴍᴀᴛ🙅', callback_data=f"series:{reqstr1}:{search}"),
-                    InlineKeyboardButton('sᴇʟʟ ᴍɪsᴛᴇᴋ✍️', callback_data=f"spelling_error:{reqstr1}:{search}")
+                    InlineKeyboardButton('ɪɴᴠᴀʟɪᴅ ғᴏʀᴍᴀᴛ🙅', callback_data=f"series:{user_id}:{search}"),
+                    InlineKeyboardButton('sᴇʟʟ ᴍɪsᴛᴇᴋ✍️', callback_data=f"spelling_error:{user_id}:{search}")
                 ],[
                     InlineKeyboardButton('⁉️ Close ⁉️', callback_data=f"close_data")
-                ]]
-                reply_markup = InlineKeyboardMarkup(safari)
-                total=await bot.get_chat_members_count(query.message.chat.id)
-                await bot.send_message(chat_id=LOG_CHANNEL, text=(script.NORSLTS.format(query.message.chat.title, query.message.chat.id, total, temp.B_NAME, reqstr.mention, search)), reply_markup=InlineKeyboardMarkup(safari))
-            k = await query.message.edit(script.MVE_NT_FND)
-            await asyncio.sleep(60)
-            await k.delete()
-            try:
-                await query.message.reply_to_message.delete()
-            except:
-                pass
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(safari)
+            
+            target_log = LOG_CHANNEL or REQ_CHANNEL
+            if target_log:
+                if query.message.chat and query.message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
+                    chat_title = query.message.chat.title
+                    chat_id = query.message.chat.id
+                    try:
+                        total = await bot.get_chat_members_count(chat_id)
+                    except Exception:
+                        total = "Unknown"
+                    log_text = script.NORSLTS.format(chat_title, chat_id, total, temp.B_NAME, user_mention, search)
+                else:
+                    log_text = script.PMNORSLTS.format(temp.B_NAME, user_mention, search)
+                
+                await bot.send_message(
+                    chat_id=target_log,
+                    text=log_text,
+                    reply_markup=reply_markup,
+                    disable_web_page_preview=True
+                )
         except Exception as e:
-            reqstr1 = query.from_user.id if query.from_user else 0
-            reqstr = await bot.get_users(reqstr1)
-            if NO_RESULTS_MSG:
-                safari = [[
-                    InlineKeyboardButton('ɴᴏᴛ ʀᴇʟᴇᴀsᴇ 📅', callback_data=f"not_release:{reqstr1}:{search}"),
-                    InlineKeyboardButton('ɴᴏᴛ ᴀᴠᴀɪʟᴀʙʟᴇ 🙅', callback_data=f"not_available:{reqstr1}:{search}")
-                ],[
-                    InlineKeyboardButton('ᴜᴘʟᴏᴀᴅᴇᴅ ✅', callback_data=f"uploaded:{reqstr1}:{search}")
-                ],[
-                    InlineKeyboardButton('ɪɴᴠᴀʟɪᴅ ғᴏʀᴍᴀᴛ🙅', callback_data=f"series:{reqstr1}:{search}"),
-                    InlineKeyboardButton('sᴇʟʟ ᴍɪsᴛᴇᴋ✍️', callback_data=f"spelling_error:{reqstr1}:{search}")
-                ],[
-                    InlineKeyboardButton('⦉ ᴄʟᴏsᴇ ⦊️', callback_data=f"close_data")
-                ]]
-                reply_markup = InlineKeyboardMarkup(safari)
-                await bot.send_message(chat_id=LOG_CHANNEL, text=(script.PMNORSLTS.format(temp.B_NAME, reqstr.mention, search)), reply_markup=InlineKeyboardMarkup(safari))
+            logger.error(f"Error sending log alert: {e}")
+
+        try:
             k = await query.message.edit(script.MVE_NT_FND)
             await asyncio.sleep(60)
             await k.delete()
-            try:
+            if query.message.reply_to_message:
                 await query.message.reply_to_message.delete()
-            except:
-                pass
+        except Exception:
+            pass
 
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
@@ -2639,7 +2643,7 @@ async def advantage_spell_chok(client, message):
 
     # Maximum 6 Clean Suggestion Buttons
     buttons = [
-        [InlineKeyboardButton(text=item[0], callback_data=f"spol#{item[1]}#{user}")]
+        [InlineKeyboardButton(text=item[0], callback_data=f"spol#{item[1][:35]}#{user}")]
         for item in valid_movies[:6]
     ]
     buttons.append([InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')])
