@@ -2552,16 +2552,6 @@ async def advantage_spell_chok(client, message):
     # 2. Multi-engine Auto Correction (Puspa -> Pushpa)
     corrected_q = await get_spell_correction(clean_q)
 
-    # Agar spelling correct ho gayi aur file DB mein hai toh seedha search karo
-    if corrected_q:
-        files, offset, total_results = await get_search_results(chat_id, corrected_q, offset=0, filter=True)
-        if files:
-            st = await message.reply(f"<b>Did you mean <code>{corrected_q}</code>? Searching...</b>")
-            await asyncio.sleep(1.5)
-            await st.delete()
-            message.text = corrected_q
-            return await auto_filter(client, message)
-
     valid_movies = []
     seen_titles = set()
 
