@@ -2492,7 +2492,7 @@ async def auto_filter(client, msg, spoll=False):
         return
 
 async def get_spell_correction(query):
-    """Multi-Engine Auto-Correction (Datacenter & Cloud Proof)"""
+    """Multi-Engine Auto-Correction (Clean Movie Titles Only)"""
     clean_query = query.strip()
     if len(clean_query) < 2:
         return None
@@ -2502,24 +2502,27 @@ async def get_spell_correction(query):
         "Accept": "*/*"
     }
 
-    # 1. Google Complete Suggest (Toolbar Client - No Cloud Block)
+    # Noise words jo title mein nahi aane chahiye (release date, cast, songs, review, etc.)
+    noise_pattern = r"(?i)\b(release date|release|cast|trailer|teaser|songs?|audio|review|budget|box office|ott|ott release|download|watch online|full movie|movie|film|hindi|tamil|telugu|malayalam|kannada)\b"
+
+    # 1. Google Complete Suggest (Toolbar Client)
     try:
         url = f"https://suggestqueries.google.com/complete/search?client=toolbar&q={quote_plus(clean_query)}"
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as resp:
                 if resp.status == 200:
                     text_data = await resp.text()
-                    # XML parse suggestion
                     matches = re.findall(r'<suggestion data="([^"]+)"', text_data)
                     for item in matches:
-                        cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
+                        cleaned = re.sub(noise_pattern, "", item).strip()
                         cleaned = " ".join(cleaned.split())
-                        if cleaned and cleaned.lower() != clean_query.lower():
+                        # Agar noise hatane ke baad valid naam bache aur clean_query se alag ho
+                        if cleaned and cleaned.lower() != clean_query.lower() and len(cleaned) > 2:
                             return cleaned
     except Exception as e:
         logger.error(f"Google Toolbar Suggest Error: {e}")
 
-    # 2. DuckDuckGo Auto-Correct Fallback (Free & 100% Reliable on Koyeb)
+    # 2. DuckDuckGo Auto-Correct Fallback
     try:
         ddg_url = f"https://duckduckgo.com/ac/?q={quote_plus(clean_query)}&type=list"
         async with aiohttp.ClientSession(headers=headers) as session:
@@ -2529,9 +2532,9 @@ async def get_spell_correction(query):
                     data = json.loads(raw_resp)
                     if data and len(data) > 1 and data[1]:
                         for item in data[1]:
-                            cleaned = re.sub(r"(?i)\b(movie|film|full movie|download|watch online|hindi|tamil|telugu)\b", "", item).strip()
+                            cleaned = re.sub(noise_pattern, "", item).strip()
                             cleaned = " ".join(cleaned.split())
-                            if cleaned and cleaned.lower() != clean_query.lower():
+                            if cleaned and cleaned.lower() != clean_query.lower() and len(cleaned) > 2:
                                 return cleaned
     except Exception as e:
         logger.error(f"DuckDuckGo Suggest Error: {e}")
