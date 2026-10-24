@@ -2492,7 +2492,7 @@ async def auto_filter(client, msg, spoll=False):
         return
 
 async def get_spell_correction(query):
-    """Multi-Engine Auto-Correction (Clean Movie Titles Only)"""
+    """Multi-Engine Auto-Correction (Strict Movie Titles Only)"""
     clean_query = query.strip()
     if len(clean_query) < 2:
         return None
@@ -2502,8 +2502,24 @@ async def get_spell_correction(query):
         "Accept": "*/*"
     }
 
-    # Noise words jo title mein nahi aane chahiye (release date, cast, songs, review, etc.)
-    noise_pattern = r"(?i)\b(release date|release|cast|trailer|teaser|songs?|audio|review|budget|box office|ott|ott release|download|watch online|full movie|movie|film|hindi|tamil|telugu|malayalam|kannada)\b"
+    # Faltu terms / promotional words
+    noise_pattern = r"(?i)\b(release date|release|cast|trailer|teaser|songs?|audio|review|budget|box office|ott|ott release|download|watch online|full movie|movie|film|hindi|tamil|telugu|malayalam|kannada|english|bengali|marathi|gujarati|punjabi)\b"
+
+    def clean_candidate(item):
+        cleaned = re.sub(noise_pattern, "", item).strip()
+        # End mein bache hue faltu prepositions/symbols (in, on, at, of, by, -, :, etc.) ko strip karein
+        cleaned = re.sub(r"(?i)\b(in|on|at|of|to|by|for|with|and|is|all|the)\s*$", "", cleaned).strip()
+        cleaned = re.sub(r"[:\-_]+$", "", cleaned).strip()
+        cleaned = " ".join(cleaned.split())
+        
+        # Agar saaf karne ke baad sirf user ka original query hi bacha ho (jaise "quotation gang" ka "quotation gang"), 
+        # ya user query ke baad bas 1-2 letters bache hon, toh use reject karein
+        if not cleaned or cleaned.lower() == clean_query.lower():
+            return None
+        # User query se shuru hokar bas adhura word na ho
+        if cleaned.lower().startswith(clean_query.lower()) and len(cleaned) <= len(clean_query) + 3:
+            return None
+        return cleaned if len(cleaned) > 2 else None
 
     # 1. Google Complete Suggest (Toolbar Client)
     try:
@@ -2514,11 +2530,9 @@ async def get_spell_correction(query):
                     text_data = await resp.text()
                     matches = re.findall(r'<suggestion data="([^"]+)"', text_data)
                     for item in matches:
-                        cleaned = re.sub(noise_pattern, "", item).strip()
-                        cleaned = " ".join(cleaned.split())
-                        # Agar noise hatane ke baad valid naam bache aur clean_query se alag ho
-                        if cleaned and cleaned.lower() != clean_query.lower() and len(cleaned) > 2:
-                            return cleaned
+                        valid = clean_candidate(item)
+                        if valid:
+                            return valid
     except Exception as e:
         logger.error(f"Google Toolbar Suggest Error: {e}")
 
@@ -2532,10 +2546,9 @@ async def get_spell_correction(query):
                     data = json.loads(raw_resp)
                     if data and len(data) > 1 and data[1]:
                         for item in data[1]:
-                            cleaned = re.sub(noise_pattern, "", item).strip()
-                            cleaned = " ".join(cleaned.split())
-                            if cleaned and cleaned.lower() != clean_query.lower() and len(cleaned) > 2:
-                                return cleaned
+                            valid = clean_candidate(item)
+                            if valid:
+                                return valid
     except Exception as e:
         logger.error(f"DuckDuckGo Suggest Error: {e}")
 
