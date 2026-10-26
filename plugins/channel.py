@@ -2,7 +2,7 @@
 # Universal Token Stream Parser - Quality Badges + Inline Button Support
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from pyrogram.errors import FloodWait
+from pyrogram.errors import FloodWait, MessageNotModified, MessageIdInvalid
 from info import CHANNELS, POST_CHANNELS, AUTO_POST
 from database.ia_filterdb import save_file
 from utils import get_poster, get_size, temp
@@ -329,9 +329,21 @@ async def media(bot, message):
             if cap_year_match:
                 extracted_year = cap_year_match.group(1)
 
-        bot_uname = temp.U_NAME or (await bot.get_me()).username
-        search_query = f"{clean_title} {season_tag}".strip()
-        single_all_files_link = f"https://t.me/{bot_uname}?start=getfile-{search_query.replace(' ', '-')}"
+        bot_uname = temp.U_NAME
+        if not bot_uname:
+            try:
+                me = await bot.get_me()
+                bot_uname = me.username
+            except Exception:
+                bot_uname = "mzmoviiez"
+
+        clean_slug = re.sub(r"[^a-zA-Z0-9\s]", "", f"{clean_title} {season_tag}").strip()
+        clean_slug = "-".join(clean_slug.split()) or "files"
+        single_all_files_link = f"https://t.me/{bot_uname}?start=getfile-{clean_slug}"
+
+        # URL validation guard taaki BUTTON_URL_INVALID na aaye
+        if not single_all_files_link.startswith(("https://t.me/", "http://t.me/")):
+            single_all_files_link = f"https://t.me/{bot_uname}"
 
         post_markup = InlineKeyboardMarkup([
             [InlineKeyboardButton("⚡ Get All Files Now ⚡", url=single_all_files_link)]
@@ -403,7 +415,7 @@ async def media(bot, message):
                         post_data["plot"], single_all_files_link
                     )
 
-                    for channel_id, msg_id in post_data["msg_ids"].items():
+                    for channel_id, msg_id in list(post_data["msg_ids"].items()):
                         try:
                             await bot.edit_message_caption(
                                 chat_id=int(channel_id),
@@ -414,13 +426,19 @@ async def media(bot, message):
                             )
                         except FloodWait as fw:
                             await asyncio.sleep(fw.value)
-                            await bot.edit_message_caption(
-                                chat_id=int(channel_id),
-                                message_id=int(msg_id),
-                                caption=updated_caption,
-                                parse_mode=enums.ParseMode.HTML,
-                                reply_markup=post_markup
-                            )
+                            try:
+                                await bot.edit_message_caption(
+                                    chat_id=int(channel_id),
+                                    message_id=int(msg_id),
+                                    caption=updated_caption,
+                                    parse_mode=enums.ParseMode.HTML,
+                                    reply_markup=post_markup
+                                )
+                            except (MessageNotModified, MessageIdInvalid):
+                                pass
+                        except (MessageNotModified, MessageIdInvalid):
+                            # Agar content same hai ya message channel se delete ho chuka hai, chupchap ignore karein
+                            pass
                         except Exception as e:
                             logging.error(f"Error updating post caption: {e}")
                 return
