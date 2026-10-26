@@ -490,20 +490,47 @@ async def language_check(bot, query):
                 await query.answer()
 
         else:
-            # user ko alert + admin ko request
+            # user ko alert + admin ko request with action buttons
             await query.answer(
                 f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.",
                 show_alert=True
             )
 
             try:
-                await bot.send_message(
-                    REQ_CHANNEL,
-                    f"📝 #REQUESTED_CONTENT 📝\n\n"
-                    f"ʙᴏᴛ - {temp.B_NAME}\n"
-                    f"ɴᴀᴍᴇ - {query.from_user.mention} (<code>{query.from_user.id}</code>)\n"
-                    f"Rᴇǫᴜᴇsᴛ - <code>{movie}</code>"
-                )
+                user_id = query.from_user.id if query.from_user else 0
+                user_mention = query.from_user.mention if query.from_user else "User"
+                
+                safari = [
+                    [
+                        InlineKeyboardButton('ɴᴏᴛ ʀᴇʟᴇᴀsᴇ 📅', callback_data=f"not_release:{user_id}:{movie}"),
+                        InlineKeyboardButton('ɴᴏᴛ ᴀᴠᴀɪʟᴀʙʟᴇ 🙅', callback_data=f"not_available:{user_id}:{movie}")
+                    ],
+                    [
+                        InlineKeyboardButton('ᴜᴘʟᴏᴀᴅᴇᴅ ✅', callback_data=f"uploaded:{user_id}:{movie}")
+                    ],
+                    [
+                        InlineKeyboardButton('ɪɴᴠᴀʟɪᴅ ғᴏʀᴍᴀᴛ🙅', callback_data=f"series:{user_id}:{movie}"),
+                        InlineKeyboardButton('sᴇʟʟ ᴍɪsᴛᴇᴋ✍️', callback_data=f"spelling_error:{user_id}:{movie}")
+                    ],
+                    [
+                        InlineKeyboardButton('⁉️ Close ⁉️', callback_data=f"close_data")
+                    ]
+                ]
+                reply_markup = InlineKeyboardMarkup(safari)
+
+                target_log = LOG_CHANNEL or REQ_CHANNEL
+                if target_log:
+                    await bot.send_message(
+                        chat_id=target_log,
+                        text=(
+                            f"📝 #REQUESTED_CONTENT (Audio/Lang) 📝\n\n"
+                            f"ʙᴏᴛ - {temp.B_NAME}\n"
+                            f"ɴᴀᴍᴇ - {user_mention} (<code>{user_id}</code>)\n"
+                            f"Rᴇǫᴜᴇsᴛ - <code>{movie}</code>"
+                        ),
+                        reply_markup=reply_markup,
+                        disable_web_page_preview=True
+                    )
             except Exception as e:
                 logger.error(f"failed to send request to REQ_CHANNEL: {e}")
 
@@ -704,20 +731,46 @@ async def quality_check(bot, query):
                 await query.answer()
 
         else:
-            # yahan koi file nahi mili → user + admin ko message
             movie = temp.KEYWORD.get(query.from_user.id) or "Unknown"
             await query.answer(
                 f"Sᴏʀʀʏ, Nᴏ ғɪʟᴇs ғᴏᴜɴᴅ ғᴏʀ ʏᴏᴜʀ ᴏ̨ᴜᴇʀʏ {movie}.",
                 show_alert=True
             )
             try:
-                await bot.send_message(
-                    REQ_CHANNEL,
-                    f"📝 #REQUESTED_CONTENT 📝\n\n"
-                    f"ʙᴏᴛ - {temp.B_NAME}\n"
-                    f"ɴᴀᴍᴇ - {query.from_user.mention} (<code>{query.from_user.id}</code>)\n"
-                    f"Rᴇǫᴜᴇsᴛ - <code>{movie}</code>"
-                )
+                user_id = query.from_user.id if query.from_user else 0
+                user_mention = query.from_user.mention if query.from_user else "User"
+
+                safari = [
+                    [
+                        InlineKeyboardButton('ɴᴏᴛ ʀᴇʟᴇᴀsᴇ 📅', callback_data=f"not_release:{user_id}:{movie}"),
+                        InlineKeyboardButton('ɴᴏᴛ ᴀᴠᴀɪʟᴀʙʟᴇ 🙅', callback_data=f"not_available:{user_id}:{movie}")
+                    ],
+                    [
+                        InlineKeyboardButton('ᴜᴘʟᴏᴀᴅᴇᴅ ✅', callback_data=f"uploaded:{user_id}:{movie}")
+                    ],
+                    [
+                        InlineKeyboardButton('ɪɴᴠᴀʟɪᴅ ғᴏʀᴍᴀᴛ🙅', callback_data=f"series:{user_id}:{movie}"),
+                        InlineKeyboardButton('sᴇʟʟ ᴍɪsᴛᴇᴋ✍️', callback_data=f"spelling_error:{user_id}:{movie}")
+                    ],
+                    [
+                        InlineKeyboardButton('⁉️ Close ⁉️', callback_data=f"close_data")
+                    ]
+                ]
+                reply_markup = InlineKeyboardMarkup(safari)
+
+                target_log = LOG_CHANNEL or REQ_CHANNEL
+                if target_log:
+                    await bot.send_message(
+                        chat_id=target_log,
+                        text=(
+                            f"📝 #REQUESTED_CONTENT (Quality) 📝\n\n"
+                            f"ʙᴏᴛ - {temp.B_NAME}\n"
+                            f"ɴᴀᴍᴇ - {user_mention} (<code>{user_id}</code>)\n"
+                            f"Rᴇǫᴜᴇsᴛ - <code>{movie}</code>"
+                        ),
+                        reply_markup=reply_markup,
+                        disable_web_page_preview=True
+                    )
             except Exception as e:
                 logger.error(f"failed to send request to REQ_CHANNEL: {e}")
             return
