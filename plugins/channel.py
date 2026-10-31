@@ -517,14 +517,14 @@ async def media(bot, message):
                 imdb_lang = imdb_info.get('languages') or imdb_info.get('language')
                 if isinstance(imdb_lang, list):
                     imdb_lang = ", ".join(imdb_lang)
-                final_languages = detected_languages or imdb_lang or "Hindi"
+                final_languages = detected_languages or imdb_lang or "Not Mentioned"
             else:
                 genres = "Drama, Series" if final_season else "Drama, Action"
                 year = extracted_year or current_yr
                 rating = "0.0"
                 poster_url = None
                 plot = "No description available for this content."
-                final_languages = detected_languages or "Hindi"
+                final_languages = detected_languages or "Not Mentioned"
 
             ep_str = format_episode_string(new_eps, is_comb)
             final_caption = build_safe_caption(
