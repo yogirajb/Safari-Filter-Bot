@@ -68,7 +68,25 @@ async def stream_download(bot, query):
         online = f"{base_url}/watch/{msg.id}/{quote_plus(get_name(msg))}?hash={get_hash(msg)}"
         download = f"{base_url}/{msg.id}/{quote_plus(get_name(msg))}?hash={get_hash(msg)}"
 
-        # 4. Shortener / Direct URL Logic
+        # 4. BIN_CHANNEL mein hi file ke neeche user details bhejna
+        try:
+            user_mention = query.from_user.mention if query.from_user else "Unknown"
+            user_id = query.from_user.id if query.from_user else 0
+            await msg.reply_text(
+                text=(
+                    f"🎬 <b>#STREAM_LOG</b>\n\n"
+                    f"👤 <b>User :</b> {user_mention} (<code>{user_id}</code>)\n"
+                    f"📁 <b>File :</b> <code>{file_name}</code>\n"
+                    f"🖥️ <b>Stream :</b> <a href='{online}'>Watch</a> | "
+                    f"📥 <b>Download :</b> <a href='{download}'>Direct</a>"
+                ),
+                disable_web_page_preview=True,
+                quote=True
+            )
+        except Exception as e:
+            logging.error(f"BIN_CHANNEL Log Error: {e}")
+
+        # 5. Shortener / Direct URL Logic
         if STREAM_MODE:
             try:
                 non_download = await stream_site(download, grp_id)
@@ -109,8 +127,8 @@ async def stream_download(bot, query):
 
     except Exception as e:
         logging.error(f"Streaming Error: {e}")
-        await query.answer("Error: BIN_CHANNEL check karein ya Bot ko Admin banayein!", show_alert=True)             
-        
+        await query.answer("Error: BIN_CHANNEL check karein ya Bot ko Admin banayein!", show_alert=True)
+
 @Client.on_message(filters.private & filters.command("stream"))
 async def reply_stream(client, message):
     reply_message = message.reply_to_message
